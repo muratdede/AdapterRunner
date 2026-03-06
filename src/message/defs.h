@@ -1,7 +1,8 @@
-#ifndef FIELDDEF_H
-#define FIELDDEF_H
+#ifndef DEFS_H
+#define DEFS_H
 
 #include <QString>
+#include <QVector>
 
 enum class FieldType
 {
@@ -32,4 +33,30 @@ struct FieldDef
     QString arrayLengthField;
 };
 
-#endif // FIELDDEF_H
+struct HeaderDef
+{
+    QString type;
+
+    QByteArray startBytes;
+
+    QSysInfo::Endian endian;
+
+    QVector<FieldDef> fields;
+
+    int headerSize = 0;
+};
+
+struct MessageDef
+{
+    QString headerType;
+
+    int messageId;
+
+    QString name;
+
+    QSysInfo::Endian endian;
+
+    QVector<FieldDef> fields;
+};
+
+#endif // DEFS_H

@@ -31,42 +31,17 @@ int main(int argc, char *argv[])
     QObject::connect(udp, &ITransport::newMessageFromRemote, &a, [&](QByteArray data){
         ParsedMessage message = parser.parseFrame(data);
 
+        auto valueNames = message.values.keys();
         qDebug() << "//////////////////////////////" << message.name << "////";
-        for (const auto &valueName : message.values.keys())
+        for (const auto &valueName : valueNames)
         {
             qDebug() << valueName << " : " << message.values.value(valueName);
         }
     });
 
     /*
-    QByteArray array;
-    // header
-    array.append(0xAA);
-    array.append(0x55);
-
-    array.append(0x01);
-    array.append(0x05);
-    // data
-    array.append(0x01); // timestamp : 0x01020304(big endian) = 16.909.060
-    array.append(0x02);
-    array.append(0x03);
-    array.append(0x04);
-
-    array.append(0x03);    // status    : 0x03 = 3
-    ParsedMessage message = parser.parseFrame(array);
-
-    qDebug() << "//////////////////////////////" << message.name << "////";
-    for (const auto &valueName : message.values.keys())
-    {
-        qDebug() << valueName << " : " << message.values.value(valueName);
-    }
-
-
-
-    // array.clear();
-    // array.append(4, 0x01); // timestamp : 0x01010101 = 16.843.009
-    // array.append(0x03);    // status    : 0x03 = 3
-    // message = parser.parse(2, array);
+    AA 55 03 07 03 00 01 00 02 00 03
+    AA 55 01 05 01 02 03 04 03
     */
 
     return a.exec();

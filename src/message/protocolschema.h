@@ -1,8 +1,7 @@
 #ifndef PROTOCOLSCHEMA_H
 #define PROTOCOLSCHEMA_H
 
-#include "headerdef.h"
-#include "messagedef.h"
+#include "defs.h"
 
 #include <QHash>
 #include <QJsonObject>
