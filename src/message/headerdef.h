@@ -11,6 +11,8 @@ struct HeaderDef
 
     QByteArray startBytes;
 
+    QSysInfo::Endian endian;
+
     QVector<FieldDef> fields;
 
     int headerSize = 0;

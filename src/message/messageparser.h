@@ -19,7 +19,9 @@ private:
     ParsedHeader parseHeader(const QByteArray& frame, const HeaderDef& header);
 
     uint64_t extractBits(const QByteArray& data, int byteOffset, int bitOffset, int bitLength);
-    QVariant readField(const QByteArray& data, const FieldDef& field);
+
+    QVariant readSingleField(const QByteArray& data, const FieldDef& field, QSysInfo::Endian msgEndian);
+    QVariant readArrayField(const QByteArray& data, const FieldDef& field, QSysInfo::Endian msgEndian, int length);
 
     const ProtocolSchema* mSchema;
 };

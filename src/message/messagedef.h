@@ -13,6 +13,8 @@ struct MessageDef
 
     QString name;
 
+    QSysInfo::Endian endian;
+
     QVector<FieldDef> fields;
 };
 

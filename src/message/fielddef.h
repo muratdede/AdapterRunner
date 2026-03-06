@@ -25,7 +25,11 @@ struct FieldDef
 
     int size = 0;
 
-    bool littleEndian = true;
+    bool hasEndianOverride = false;
+    QSysInfo::Endian endian;
+
+    int arrayLength = 0;
+    QString arrayLengthField;
 };
 
 #endif // FIELDDEF_H

@@ -1,4 +1,5 @@
 QT -= gui
+QT = network serialport
 
 CONFIG += c++17 console
 CONFIG -= app_bundle
@@ -16,10 +17,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-        src/frameextractor.cpp \
-        src/genericmessageparser.cpp \
+        src/network/itransport.cpp \
         src/message/messageparser.cpp \
-        src/message/protocolschema.cpp
+        src/message/protocolschema.cpp \
+        src/network/serialtransport.cpp \
+        src/network/tcptransport.cpp \
+        src/network/transportfactory.cpp \
+        src/network/transportmanager.cpp \
+        src/network/udptransport.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -27,13 +32,17 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+    src/message/Utils.h \
     src/message/fielddef.h \
-    src/frameextractor.h \
-    src/genericmessageparser.h \
-    src/itransport.h \
+    src/network/itransport.h \
     src/message/headerdef.h \
     src/message/messagedef.h \
     src/message/messageparser.h \
     src/message/parsedheader.h \
     src/message/parsedmessage.h \
-    src/message/protocolschema.h
+    src/message/protocolschema.h \
+    src/network/serialtransport.h \
+    src/network/tcptransport.h \
+    src/network/transportfactory.h \
+    src/network/transportmanager.h \
+    src/network/udptransport.h

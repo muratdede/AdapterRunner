@@ -4,71 +4,62 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonDocument>
+#include <stdexcept>
 
-bool ProtocolSchema::load(QString path)
+
+bool ProtocolSchema::load(const QString& path)
 {
     QFile file(path);
 
     if (!file.open(QIODevice::ReadOnly))
         return false;
 
-    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-    QJsonObject root = doc.object();
+    auto doc = QJsonDocument::fromJson(file.readAll());
 
-    // HEADERS
+    if (!doc.isObject())
+        return false;
 
+    auto root = doc.object();
+
+    /*
+        HEADERS
+    */
     for (auto headerVal : root["headers"].toArray())
     {
-        QJsonObject obj = headerVal.toObject();
+        auto obj = headerVal.toObject();
 
         HeaderDef header;
 
         header.type = obj["type"].toString();
 
-        header.startBytes = QByteArray::fromHex(obj["start_bytes"].toString().toUtf8());
+        header.startBytes =
+            QByteArray::fromHex(obj["start_bytes"].toString().toUtf8());
 
         header.headerSize = obj["header_size"].toInt();
 
+        if (obj.contains("endianness"))
+            header.endian = parseEndianness(obj["endianness"].toString());
+        else
+            header.endian = QSysInfo::LittleEndian;
+
         for (auto fieldVal : obj["fields"].toArray())
         {
-            QJsonObject f = fieldVal.toObject();
+            auto fieldObj = fieldVal.toObject();
 
-            FieldDef field;
-
-            field.name = f["name"].toString();
-
-            QString type = f["type"].toString();
-
-            if (type.startsWith("uint")) field.type = FieldType::UINT;
-            else if (type.startsWith("int")) field.type = FieldType::INT;
-            else if (type == "float") field.type = FieldType::FLOAT;
-            else if (type == "double") field.type = FieldType::DOUBLE;
-            else if (type == "bool") field.type = FieldType::BOOL;
-
-            if (type.contains("8")) field.size = 1;
-            if (type.contains("16")) field.size = 2;
-            if (type.contains("32")) field.size = 4;
-            if (type.contains("64")) field.size = 8;
-
-            field.byteOffset = f["byte_offset"].toInt();
-
-            if (f.contains("bit_offset"))
-            {
-                field.bitOffset = f["bit_offset"].toInt();
-                field.bitLength = f["bit_length"].toInt();
-            }
+            FieldDef field = parseField(fieldObj);
 
             header.fields.push_back(field);
         }
 
-        mHeaders[header.type] = header;
+        mHeaders.insert(header.type, header);
     }
 
-    // MESSAGES
-
+    /*
+        MESSAGES
+    */
     for (auto msgVal : root["messages"].toArray())
     {
-        QJsonObject obj = msgVal.toObject();
+        auto obj = msgVal.toObject();
 
         MessageDef msg;
 
@@ -76,39 +67,16 @@ bool ProtocolSchema::load(QString path)
         msg.messageId = obj["message_id"].toInt();
         msg.name = obj["name"].toString();
 
+        msg.endian = parseEndianness(obj["endianness"].toString());
+
         for (auto fieldVal : obj["fields"].toArray())
         {
-            QJsonObject f = fieldVal.toObject();
-
-            FieldDef field;
-
-            field.name = f["name"].toString();
-
-            QString type = f["type"].toString();
-
-            if (type.startsWith("uint")) field.type = FieldType::UINT;
-            else if (type.startsWith("int")) field.type = FieldType::INT;
-            else if (type == "float") field.type = FieldType::FLOAT;
-            else if (type == "double") field.type = FieldType::DOUBLE;
-            else if (type == "bool") field.type = FieldType::BOOL;
-
-            if (type.contains("8")) field.size = 1;
-            if (type.contains("16")) field.size = 2;
-            if (type.contains("32")) field.size = 4;
-            if (type.contains("64")) field.size = 8;
-
-            field.byteOffset = f["byte_offset"].toInt();
-
-            if (f.contains("bit_offset"))
-            {
-                field.bitOffset = f["bit_offset"].toInt();
-                field.bitLength = f["bit_length"].toInt();
-            }
+            FieldDef field = parseField(fieldVal.toObject());
 
             msg.fields.push_back(field);
         }
 
-        mMessages[msg.headerType][msg.messageId] = msg;
+        mMessages[msg.headerType].insert(msg.messageId, msg);
     }
 
     return true;
@@ -140,4 +108,84 @@ const MessageDef* ProtocolSchema::getMessage(const QString& headerType, int msgI
         return nullptr;
 
     return &msgIt.value();
+}
+
+QSysInfo::Endian ProtocolSchema::parseEndianness(const QString& str)
+{
+    if (str == "big")
+        return QSysInfo::BigEndian;
+
+    return QSysInfo::LittleEndian;
+}
+
+FieldType ProtocolSchema::parseFieldType(const QString& type)
+{
+    if (type.startsWith("uint"))
+        return FieldType::UINT;
+
+    if (type.startsWith("int"))
+        return FieldType::INT;
+
+    if (type == "float")
+        return FieldType::FLOAT;
+
+    if (type == "double")
+        return FieldType::DOUBLE;
+
+    if (type == "bool")
+        return FieldType::BOOL;
+
+    throw std::runtime_error("Unknown field type");
+}
+
+int ProtocolSchema::parseTypeSize(const QString& type)
+{
+    if (type.contains("8")) return 1;
+    if (type.contains("16")) return 2;
+    if (type.contains("32")) return 4;
+    if (type.contains("64")) return 8;
+
+    if (type == "float") return 4;
+    if (type == "double") return 8;
+    if (type == "bool") return 1;
+
+    return 0;
+}
+
+FieldDef ProtocolSchema::parseField(const QJsonObject& f)
+{
+    FieldDef field;
+
+    field.name = f["name"].toString();
+
+    QString type = f["type"].toString();
+
+    field.type = parseFieldType(type);
+    field.size = parseTypeSize(type);
+
+    field.byteOffset = f["byte_offset"].toInt();
+
+    if (f.contains("bit_offset"))
+    {
+        field.bitOffset = f["bit_offset"].toInt();
+        field.bitLength = f["bit_length"].toInt();
+    }
+
+    if (f.contains("endianness"))
+    {
+        field.hasEndianOverride = true;
+        field.endian = parseEndianness(f["endianness"].toString());
+    }
+
+    if (f.contains("array_length"))
+    {
+        field.arrayLength = f["array_length"].toInt();
+    }
+
+    if (f.contains("array_length_field"))
+    {
+        field.arrayLengthField = f["array_length_field"].toString();
+    }
+
+    return field;
 }
