@@ -16,15 +16,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-        main.cpp \
-        src/network/itransport.cpp \
-        src/message/messageparser.cpp \
-        src/message/protocolschema.cpp \
-        src/network/serialtransport.cpp \
-        src/network/tcptransport.cpp \
-        src/network/transportfactory.cpp \
-        src/network/transportmanager.cpp \
-        src/network/udptransport.cpp
+    main.cpp \
+    src/conn/network/basyncudpdatareceiver.cpp \
+    src/conn/network/basyncudpdatasender.cpp \
+    src/conn/serial/bserialsenderreceiver.cpp \
+    src/conn/transport/transportfactory.cpp \
+    src/conn/transport/transportmanager.cpp \
+    src/message/messageparser.cpp \
+    src/message/protocolschema.cpp \
+    src/thread/bathread.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -32,17 +32,19 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+    src/conn/network/basyncudpdatareceiver.h \
+    src/conn/network/basyncudpdatasender.h \
+    src/conn/network/bathreadnetworkreceiver.h \
+    src/conn/serial/bserialsenderreceiver.h \
+    src/conn/transport/itransport.h \
+    src/conn/transport/transportfactory.h \
+    src/conn/transport/transportmanager.h \
     src/message/Utils.h \
     src/message/fielddef.h \
-    src/network/itransport.h \
     src/message/headerdef.h \
     src/message/messagedef.h \
     src/message/messageparser.h \
     src/message/parsedheader.h \
     src/message/parsedmessage.h \
     src/message/protocolschema.h \
-    src/network/serialtransport.h \
-    src/network/tcptransport.h \
-    src/network/transportfactory.h \
-    src/network/transportmanager.h \
-    src/network/udptransport.h
+    src/thread/bathread.h

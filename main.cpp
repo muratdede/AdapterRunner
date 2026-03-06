@@ -2,7 +2,7 @@
 
 #include <QDebug>
 
-#include "src/network/transportmanager.h"
+#include "src/conn/transport/transportmanager.h"
 
 #include "src/message/messageparser.h"
 #include "src/message/protocolschema.h"
@@ -28,10 +28,7 @@ int main(int argc, char *argv[])
 
     MessageParser parser(&schema);
 
-    QObject::connect(udp, &ITransport::dataArrived, &a, [&](){
-
-        QByteArray data = udp->consume();
-
+    QObject::connect(udp, &ITransport::newMessageFromRemote, &a, [&](QByteArray data){
         ParsedMessage message = parser.parseFrame(data);
 
         qDebug() << "//////////////////////////////" << message.name << "////";
@@ -39,7 +36,7 @@ int main(int argc, char *argv[])
         {
             qDebug() << valueName << " : " << message.values.value(valueName);
         }
-        }, Qt::QueuedConnection);
+    });
 
     /*
     QByteArray array;
