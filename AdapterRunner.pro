@@ -53,7 +53,10 @@ HEADERS += \
     src/conn/transport/transportfactory.h \
     src/conn/transport/transportmanager.h \
     src/message/Utils.h \
+    src/message/checksum2c.h \
+    src/message/checksumfactory.h \
     src/message/defs.h \
+    src/message/ichecksumalgorithm.h \
     src/message/messageparser.h \
     src/message/messageserializer.h \
     src/message/parsedheader.h \

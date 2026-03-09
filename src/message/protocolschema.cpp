@@ -211,5 +211,12 @@ FieldDef ProtocolSchema::parseField(const QJsonObject& f)
         field.arrayLengthField = f["array_length_field"].toString();
     }
 
+    if (f.contains("compute"))
+    {
+        auto cObj = f["compute"].toObject();
+        field.compute.algorithm = cObj["algorithm"].toString();
+        field.compute.onMismatch = cObj["onMismatch"].toString();
+    }
+
     return field;
 }

@@ -59,6 +59,15 @@
           "name": "status",
           "type": "uint8",
           "byte_offset": 4
+        },
+        {
+          "name": "checksum",
+          "type": "uint8",
+          "byte_offset": 5,
+          "compute": {
+            "algorithm": "checksum_2c",
+            "onMismatch": "drop"
+          }
         }
       ]
     },
@@ -118,6 +127,15 @@
           "type": "uint16",
           "byte_offset": 5,
           "array_length": 3
+        },
+        {
+          "name": "checksum",
+          "type": "uint8",
+          "byte_offset": 11,
+          "compute": {
+            "algorithm": "checksum_2c",
+            "onMismatch": "drop"
+          }
         }
       ]
     }
@@ -140,10 +158,17 @@
           "receiver": "telemetry_udp_in",
           "timeout_ms": 10000,
           "default_values": {
-            "position": [0, 0, 0]
+            "position": [
+              0,
+              0,
+              0
+            ]
           },
           "mappings": [
-            { "to": "position", "expr": "position.map(x => int(x * 100))" }
+            {
+              "to": "position",
+              "expr": "position.map(x => int(x * 100))"
+            }
           ]
         }
       ],

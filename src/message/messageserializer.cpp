@@ -1,4 +1,5 @@
 #include "messageserializer.h"
+#include "checksumfactory.h"
 #include "Utils.h"
 
 #include <QDebug>
@@ -143,6 +144,10 @@ QByteArray MessageSerializer::buildFrame(const QString &messageName, const QMap<
 
     for (const FieldDef& field : msgDef->fields)
     {
+        // Skip computed fields — they are filled after all regular fields
+        if (field.compute.hasCompute())
+            continue;
+
         QVariant v = values.value(field.name);
 
         int arrayLen = field.arrayLength;
@@ -157,6 +162,30 @@ QByteArray MessageSerializer::buildFrame(const QString &messageName, const QMap<
         else
         {
             writeSingleField(payload, field, v, msgDef->endian);
+        }
+    }
+
+    // Handle computed fields (e.g. checksums)
+    for (const FieldDef& field : msgDef->fields)
+    {
+        if (!field.compute.hasCompute())
+            continue;
+
+        // Ensure buffer is large enough for the computed field
+        int needed = field.byteOffset + field.size;
+        if (payload.size() < needed)
+            payload.resize(needed);
+
+        const IChecksumAlgorithm* algo = ChecksumFactory::create(field.compute.algorithm);
+        if (algo)
+        {
+            uint8_t checksum = algo->compute(payload, field.byteOffset, field.size);
+            writeValue<uint8_t>(payload, field.byteOffset, checksum, msgDef->endian);
+        }
+        else
+        {
+            qWarning() << "MessageSerializer: unknown compute algorithm:" << field.compute.algorithm
+                       << "for field" << field.name;
         }
     }
 

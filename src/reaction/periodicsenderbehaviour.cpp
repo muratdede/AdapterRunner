@@ -30,6 +30,7 @@ PeriodicSenderBehaviour::PeriodicSenderBehaviour(const QJsonObject &config, ISen
         );
 
         mTrackers.append(tracker);
+        mTrackerByName.insert(srcObj["message"].toString(), tracker); // TODO check if works
         mMappings.append(FieldMapping::fromJsonArray(srcObj["mappings"].toArray()));
 
         qDebug() << "PeriodicSenderBehaviour: source[" << i << "]"
@@ -91,6 +92,26 @@ QMap<QString, QVariant> PeriodicSenderBehaviour::buildMergedValues()
 
             for (const FieldMapping& mapping : mappings)
             {
+                // Load dependent source variables into JS scope
+                for (const QString& dep : mapping.dependents)
+                {
+                    int dotIdx = dep.indexOf('.');
+                    QString msgName = (dotIdx > 0) ? dep.left(dotIdx) : dep;
+                    QString fieldName = (dotIdx > 0) ? dep.mid(dotIdx + 1) : QString();
+
+                    SourceTracker* depTracker = mTrackerByName.value(msgName, nullptr);
+                    if (!depTracker) continue;
+
+                    if (fieldName.isEmpty())
+                        mEvaluator.setVariables(depTracker->currentValues());
+                    else
+                    {
+                        const auto& vals = depTracker->currentValues();
+                        if (vals.contains(fieldName))
+                            mEvaluator.setVariable(fieldName, vals[fieldName]);
+                    }
+                }
+
                 QVariant result = mEvaluator.evaluate(mapping.expression);
                 merged.insert(mapping.targetField, result);
             }

@@ -41,6 +41,7 @@ private:
     QTimer* mPeriodicTimer;
 
     QVector<SourceTracker*> mTrackers;
+    QMap<QString, SourceTracker*> mTrackerByName;  // lookup by message name
     QVector<QVector<FieldMapping>> mMappings;  // per-tracker mappings
     ExpressionEvaluator mEvaluator;
 };

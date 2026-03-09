@@ -1,6 +1,9 @@
 #include "messageparser.h"
+#include "checksumfactory.h"
 
 #include "Utils.h"
+
+#include <QDebug>
 
 // TODO 4 bytelık chunk parcalama da eklenmeli
 uint64_t MessageParser::extractBits(const QByteArray &data, int byteOffset, int bitOffset, int bitLength)
@@ -69,6 +72,29 @@ ParsedMessage MessageParser::parseFrame(const QByteArray& frame)
     }
 
     result.values = parsedFields;
+
+    // Verify computed fields (e.g. checksum)
+    for (const FieldDef& field : msgDef->fields)
+    {
+        if (!field.compute.hasCompute())
+            continue;
+
+        const IChecksumAlgorithm* algo = ChecksumFactory::create(field.compute.algorithm);
+        if (!algo)
+            continue;
+
+        uint8_t received = static_cast<uint8_t>(parsedFields[field.name].toUInt());
+
+        if (!algo->verify(payload, field.byteOffset, field.size, received))
+        {
+            uint8_t expected = algo->compute(payload, field.byteOffset, field.size);
+            qWarning() << "MessageParser: checksum mismatch for" << result.name
+                       << "- expected:" << expected << "received:" << received;
+
+            if (field.compute.onMismatch == "drop")
+                return ParsedMessage();
+        }
+    }
 
     return result;
 }

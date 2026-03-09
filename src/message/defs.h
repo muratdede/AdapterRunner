@@ -13,6 +13,14 @@ enum class FieldType
     BOOL
 };
 
+struct ComputeDef
+{
+    QString algorithm;    // e.g. "checksum_2c"
+    QString onMismatch;   // e.g. "drop", "warn" (receive-side only)
+
+    bool hasCompute() const { return !algorithm.isEmpty(); }
+};
+
 struct FieldDef
 {
     QString name;
@@ -31,6 +39,8 @@ struct FieldDef
 
     int arrayLength = 0;
     QString arrayLengthField;
+
+    ComputeDef compute;
 };
 
 struct HeaderDef
