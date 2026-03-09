@@ -43,12 +43,49 @@ IBehaviour* ReactionEngine::createBehaviour(const QJsonObject &config)
         return nullptr;
     }
 
-    // Connect relevant receivers (avoid duplicates)
-    QStringList receiverKeys = {"receiver", "source_receiver"};
-    for (const auto& key : receiverKeys)
+    // Create behaviour by type
+    IBehaviour* behaviour = nullptr;
+
+    if (type == "respond")
     {
-        QString receiverName = config[key].toString();
-        if (receiverName.isEmpty() || mConnectedReceivers.contains(receiverName))
+        behaviour = new RespondBehaviour(config, sender, mSerializer, this);
+    }
+    else if (type == "respond_with_last")
+    {
+        behaviour = new RespondWithLastBehaviour(config, sender, mSerializer, this);
+    }
+    else if (type == "periodic_sender")
+    {
+        behaviour = new PeriodicSenderBehaviour(config, sender, mSerializer, this);
+    }
+    else
+    {
+        qWarning() << "ReactionEngine: unknown behaviour type:" << type;
+        return nullptr;
+    }
+
+    // Collect all receiver names this behaviour needs
+    QStringList receiverNames;
+
+    // Top-level keys
+    for (const auto& key : {"receiver", "source_receiver"})
+    {
+        QString name = config[key].toString();
+        if (!name.isEmpty())
+            receiverNames.append(name);
+    }
+
+    // PeriodicSender sources
+    auto* periodic = qobject_cast<PeriodicSenderBehaviour*>(behaviour);
+    if (periodic)
+    {
+        receiverNames.append(periodic->requiredReceivers());
+    }
+
+    // Connect receivers (avoid duplicates)
+    for (const auto& receiverName : receiverNames)
+    {
+        if (mConnectedReceivers.contains(receiverName))
             continue;
 
         ITransport* receiver = mTransportManager->getReceiver(receiverName);
@@ -65,24 +102,7 @@ IBehaviour* ReactionEngine::createBehaviour(const QJsonObject &config)
         mConnectedReceivers.insert(receiverName);
     }
 
-    // Create behaviour by type
-    if (type == "respond")
-    {
-        return new RespondBehaviour(config, sender, mSerializer, this);
-    }
-
-    if (type == "respond_with_last")
-    {
-        return new RespondWithLastBehaviour(config, sender, mSerializer, this);
-    }
-
-    if (type == "periodic_sender")
-    {
-        return new PeriodicSenderBehaviour(config, sender, mSerializer, this);
-    }
-
-    qWarning() << "ReactionEngine: unknown behaviour type:" << type;
-    return nullptr;
+    return behaviour;
 }
 
 void ReactionEngine::onReceiverData(const QByteArray &data, const QString &receiverName)

@@ -36,13 +36,13 @@
     },
     {
       "message_id": 2,
-      "header": "extended",
+      "header": "basic",
       "name": "Vector",
-      "endianness": "big",
+      "endianness": "little",
       "fields": [
         {
           "name": "position",
-          "type": "float",
+          "type": "uint16",
           "byte_offset": 0,
           "array_length": 3
         }
@@ -63,32 +63,46 @@
           "array_length_field": "count"
         }
       ]
+    },
+    {
+      "message_id": 4,
+      "header": "basic",
+      "name": "ComposeMessage",
+      "endianness": "little",
+      "fields": [
+        { "name": "timestamp", "type": "uint32", "byte_offset": 0, "endianness": "big" },
+        { "name": "status", "type": "uint8", "byte_offset": 4 },
+		{ "name": "position", "type": "uint16", "byte_offset": 5, "array_length": 3 }
+      ]
     }
   ],
 
   "reactions": [
     {
-      "type": "respond",
-      "trigger": "Heartbeat",
-      "receiver": "telemetry_udp_in",
-      "response": "Vector",
-      "sender": "telemetry_udp_out",
-      "period_ms": 1000,
-      "on_timeout": "send_defaults",
-      "default_values": {
-        "position": [1.0, 2.0, 3.0]
-      }
-    },
-    {
       "type": "periodic_sender",
-      "response": "Heartbeat",
+	  "sources": [
+	    {
+		  "message": "Heartbeat",
+		  "receiver": "telemetry_udp_in",
+		  "timeout_ms": 10000,
+		  "default_values": {
+			"timestamp": 123456,
+			"status": 8
+		  }
+	    },
+		{
+		  "message": "Vector",
+		  "receiver": "telemetry_udp_in",
+		  "timeout_ms": 10000,
+		  "default_values": {
+			"position": [0, 0, 0]
+		  }
+		}
+	  ],
+      "response": "ComposeMessage",
       "sender": "telemetry_udp_out",
       "period_ms": 1000,
-      "on_timeout": "send_defaults",
-      "default_values": {
-        "timestamp": 123456,
-		"status": 8
-      }
+      "on_timeout": "stop"
     }
   ]
 }
