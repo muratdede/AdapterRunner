@@ -8,6 +8,8 @@
 #include "src/message/messageserializer.h"
 #include "src/message/protocolschema.h"
 
+// TODO: reactionları runtimeda sürekli if name equals ile kıyaslamak yerine gerekli sender ve reaction handlerların
+//   connectionlarıyla bu iş çözülebilir
 #include "src/reaction/reactionengine.h"
 
 int main(int argc, char *argv[])

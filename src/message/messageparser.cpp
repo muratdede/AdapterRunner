@@ -2,6 +2,7 @@
 
 #include "Utils.h"
 
+// TODO 4 bytelık chunk parcalama da eklenmeli
 uint64_t MessageParser::extractBits(const QByteArray &data, int byteOffset, int bitOffset, int bitLength)
 {
     uint64_t value = 0;
@@ -100,6 +101,20 @@ ParsedHeader MessageParser::parseHeader(const QByteArray &frame, const HeaderDef
 
 QVariant MessageParser::readSingleField(const QByteArray &data, const FieldDef &field, QSysInfo::Endian msgEndian)
 {
+    if (field.bitOffset >= 0)
+    {
+        uint64_t v = extractBits(data,
+                                 field.byteOffset,
+                                 field.bitOffset,
+                                 field.bitLength);
+
+        if (field.type == FieldType::BOOL) {
+            return QVariant::fromValue(bool(v));
+        }
+
+        return QVariant::fromValue(v);
+    }
+
     QSysInfo::Endian e = field.hasEndianOverride ? field.endian : msgEndian;
 
     switch (field.type)
