@@ -1,8 +1,7 @@
 #include "transportfactory.h"
 
-// #include "udptransport.h"
-// #include "tcptransport.h"
-// #include "serialtransport.h"
+
+#include "src/conn/network/basynctcpdatareceiver.h"
 #include "src/conn/network/basyncudpdatareceiver.h"
 #include "src/conn/serial/bserialsenderreceiver.h"
 
@@ -17,12 +16,12 @@ ITransport *createTransport(const QJsonObject &obj)
             QHostAddress(obj["bind_address"].toString()));
     }
 
-    // if (type == "tcp")
-    // {
-    //     return new TcpTransport(
-    //         obj["host"].toString(),
-    //         obj["port"].toInt());
-    // }
+    if (type == "tcp")
+    {
+        return new BAsyncTCPDataReceiver(
+            obj["port"].toInt(),
+            QHostAddress(obj["host"].toString()));
+    }
 
     if (type == "serial")
     {

@@ -1,5 +1,5 @@
 QT -= gui
-QT = network serialport
+QT += network serialport
 
 CONFIG += c++17 console
 CONFIG -= app_bundle
@@ -17,6 +17,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     main.cpp \
+    src/conn/network/basynctcpdatareceiver.cpp \
+    src/conn/network/basynctcpdatasender.cpp \
     src/conn/network/basyncudpdatareceiver.cpp \
     src/conn/network/basyncudpdatasender.cpp \
     src/conn/serial/bserialsenderreceiver.cpp \
@@ -32,6 +34,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+    src/conn/network/basynctcpdatareceiver.h \
+    src/conn/network/basynctcpdatasender.h \
     src/conn/network/basyncudpdatareceiver.h \
     src/conn/network/basyncudpdatasender.h \
     src/conn/network/bathreadnetworkreceiver.h \
@@ -40,9 +44,7 @@ HEADERS += \
     src/conn/transport/transportfactory.h \
     src/conn/transport/transportmanager.h \
     src/message/Utils.h \
-    src/message/fielddef.h \
-    src/message/headerdef.h \
-    src/message/messagedef.h \
+    src/message/defs.h \
     src/message/messageparser.h \
     src/message/parsedheader.h \
     src/message/parsedmessage.h \
