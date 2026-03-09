@@ -18,7 +18,8 @@ bool TransportManager::load(const QString& path)
 
     auto root = doc.object();
 
-    for (auto val : root["transports"].toArray())
+    // Receivers
+    for (auto val : root["receivers"].toArray())
     {
         auto obj = val.toObject();
 
@@ -31,13 +32,40 @@ bool TransportManager::load(const QString& path)
 
         transport->start();
 
-        mTransports.insert(name, transport);
+        mReceivers.insert(name, transport);
+    }
+
+    // Senders
+    for (auto val : root["senders"].toArray())
+    {
+        auto obj = val.toObject();
+
+        QString name = obj["name"].toString();
+
+        auto sender = createSender(obj);
+
+        if (!sender)
+            continue;
+
+        sender->start();
+
+        mSenders.insert(name, sender);
     }
 
     return true;
 }
 
-ITransport* TransportManager::get(const QString& name)
+ITransport* TransportManager::getReceiver(const QString& name)
 {
-    return mTransports.value(name, nullptr);
+    return mReceivers.value(name, nullptr);
+}
+
+ISender* TransportManager::getSender(const QString& name)
+{
+    return mSenders.value(name, nullptr);
+}
+
+QHash<QString, ITransport*>& TransportManager::receivers()
+{
+    return mReceivers;
 }

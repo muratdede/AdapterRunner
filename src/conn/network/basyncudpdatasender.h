@@ -1,10 +1,10 @@
 #ifndef BASYNCUDPDATASENDER_H
 #define BASYNCUDPDATASENDER_H
 
-#include "src/thread/bathread.h"
+#include "src/conn/transport/isender.h"
 #include <QUdpSocket>
 
-class BAsyncUDPDataSender : public BAThread
+class BAsyncUDPDataSender : public ISender
 {
     Q_OBJECT
 public:
@@ -12,7 +12,7 @@ public:
     virtual ~BAsyncUDPDataSender();
 
 public slots:
-    void send(const QByteArray &pBuffer);
+    void send(const QByteArray &pBuffer) override;
 
 signals:
     void errorOccurred(QAbstractSocket::SocketError error);

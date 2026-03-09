@@ -15,6 +15,9 @@ public:
     const HeaderDef* findHeader(const QByteArray& data) const;
     const MessageDef* getMessage(const QString& headerType, int msgId) const;
 
+    const MessageDef* getMessageByName(const QString& name) const;
+    const HeaderDef* getHeader(const QString& type) const;
+
 private:
     QSysInfo::Endian parseEndianness(const QString& str);
     FieldType parseFieldType(const QString& type);
@@ -23,6 +26,7 @@ private:
 
     QHash<QString, HeaderDef> mHeaders;
     QHash<QString, QHash<int, MessageDef>> mMessages;
+    QHash<QString, const MessageDef*> mMessagesByName;
 };
 
 #endif // PROTOCOLSCHEMA_H

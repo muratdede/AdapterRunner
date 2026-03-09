@@ -35,7 +35,7 @@ ParsedMessage MessageParser::parseFrame(const QByteArray& frame)
 
     int msgId = h.values["msg_id"].toInt();
 
-    const MessageDef* msgDef = mSchema->getMessage(header->type, msgId);
+    const MessageDef* msgDef = mSchema->getMessage(msgId);
 
     if (!msgDef)
         return result;

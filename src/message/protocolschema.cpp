@@ -79,6 +79,15 @@ bool ProtocolSchema::load(const QString& path)
         mMessages[msg.headerType].insert(msg.messageId, msg);
     }
 
+    // Build name lookup index
+    for (auto& headerMap : mMessages)
+    {
+        for (auto it = headerMap.begin(); it != headerMap.end(); ++it)
+        {
+            mMessagesByName.insert(it.value().name, &it.value());
+        }
+    }
+
     return true;
 }
 
@@ -108,6 +117,21 @@ const MessageDef* ProtocolSchema::getMessage(const QString& headerType, int msgI
         return nullptr;
 
     return &msgIt.value();
+}
+
+const MessageDef* ProtocolSchema::getMessageByName(const QString& name) const
+{
+    return mMessagesByName.value(name, nullptr);
+}
+
+const HeaderDef* ProtocolSchema::getHeader(const QString& type) const
+{
+    auto it = mHeaders.find(type);
+
+    if (it == mHeaders.end())
+        return nullptr;
+
+    return &it.value();
 }
 
 QSysInfo::Endian ProtocolSchema::parseEndianness(const QString& str)

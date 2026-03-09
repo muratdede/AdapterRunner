@@ -1,0 +1,82 @@
+{
+  "headers": [
+    {
+      "type": "basic",
+      "start_bytes": "AA55",
+      "endianness": "little",
+      "header_size": 4,
+      "fields": [
+        { "name": "msg_id", "type": "uint8", "byte_offset": 2 },
+        { "name": "length", "type": "uint8", "byte_offset": 3 }
+      ]
+    },
+    {
+      "type": "extended",
+      "start_bytes": "55AA",
+      "endianness": "little",
+      "header_size": 7,
+      "fields": [
+        { "name": "msg_id", "type": "uint16", "byte_offset": 2 },
+        { "name": "length", "type": "uint16", "byte_offset": 4 },
+        { "name": "version", "type": "uint8", "byte_offset": 6 }
+      ]
+    }
+  ],
+
+  "messages": [
+    {
+      "message_id": 1,
+      "header": "basic",
+      "name": "Heartbeat",
+      "endianness": "little",
+      "fields": [
+        { "name": "timestamp", "type": "uint32", "byte_offset": 0, "endianness": "big" },
+        { "name": "status", "type": "uint8", "byte_offset": 4 }
+      ]
+    },
+    {
+      "message_id": 2,
+      "header": "basic",
+      "name": "Vector",
+      "endianness": "little",
+      "fields": [
+        {
+          "name": "position",
+          "type": "uint16",
+          "byte_offset": 0,
+          "array_length": 3
+        }
+      ]
+    },
+    {
+      "message_id": 3,
+      "header": "basic",
+      "name": "DynamicPayload",
+      "endianness": "little",
+      "fields": [
+        { "name": "count", "type": "uint8", "byte_offset": 0 },
+        {
+          "name": "values",
+          "type": "uint16",
+          "byte_offset": 1,
+          "endianness": "big",
+          "array_length_field": "count"
+        }
+      ]
+    }
+  ],
+
+  "reactions": [
+    {
+      "on_receive": "Heartbeat",
+      "receiver": "telemetry_udp_in",
+      "respond_with": "Vector",
+      "sender": "telemetry_udp_out",
+      "period_ms": 1000,
+      "on_timeout": "send_defaults",
+      "default_values": {
+        "position": [1.0, 2.0, 3.0]
+      }
+    }
+  ]
+}

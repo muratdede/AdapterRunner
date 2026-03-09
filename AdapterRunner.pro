@@ -25,7 +25,10 @@ SOURCES += \
     src/conn/transport/transportfactory.cpp \
     src/conn/transport/transportmanager.cpp \
     src/message/messageparser.cpp \
+    src/message/messageserializer.cpp \
     src/message/protocolschema.cpp \
+    src/reaction/reactionengine.cpp \
+    src/reaction/reactionrulecontroller.cpp \
     src/thread/bathread.cpp
 
 # Default rules for deployment.
@@ -40,13 +43,17 @@ HEADERS += \
     src/conn/network/basyncudpdatasender.h \
     src/conn/network/bathreadnetworkreceiver.h \
     src/conn/serial/bserialsenderreceiver.h \
+    src/conn/transport/isender.h \
     src/conn/transport/itransport.h \
     src/conn/transport/transportfactory.h \
     src/conn/transport/transportmanager.h \
     src/message/Utils.h \
     src/message/defs.h \
     src/message/messageparser.h \
+    src/message/messageserializer.h \
     src/message/parsedheader.h \
     src/message/parsedmessage.h \
     src/message/protocolschema.h \
+    src/reaction/reactionengine.h \
+    src/reaction/reactionrulecontroller.h \
     src/thread/bathread.h

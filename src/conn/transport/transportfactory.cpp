@@ -3,6 +3,7 @@
 
 #include "src/conn/network/basynctcpdatareceiver.h"
 #include "src/conn/network/basyncudpdatareceiver.h"
+#include "src/conn/network/basyncudpdatasender.h"
 #include "src/conn/serial/bserialsenderreceiver.h"
 
 ITransport *createTransport(const QJsonObject &obj)
@@ -36,3 +37,20 @@ ITransport *createTransport(const QJsonObject &obj)
 
     return nullptr;
 }
+
+ISender *createSender(const QJsonObject &obj)
+{
+    QString type = obj["type"].toString();
+
+    if (type == "udp")
+    {
+        return new BAsyncUDPDataSender(
+            QHostAddress(obj["destination_host"].toString()),
+            obj["destination_port"].toInt(),
+            QHostAddress::AnyIPv4,
+            obj["source_port"].toInt(0));
+    }
+
+    return nullptr;
+}
+

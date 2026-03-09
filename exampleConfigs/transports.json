@@ -1,0 +1,19 @@
+{
+  "receivers": [
+    {
+      "name": "telemetry_udp_in",
+      "type": "udp",
+      "bind_address": "225.0.0.1",
+      "port": 5000
+    }
+  ],
+  "senders": [
+    {
+      "name": "telemetry_udp_out",
+      "type": "udp",
+      "destination_host": "225.0.0.1",
+      "destination_port": 5001,
+      "source_port": 0
+    }
+  ]
+}

@@ -5,7 +5,7 @@
 #include <QAbstractEventDispatcher>
 
 BAsyncUDPDataSender::BAsyncUDPDataSender(const QHostAddress &pDestinationHost, uint16_t pDestinationPort, const QHostAddress &pEthernetInterfaceAddress, uint16_t pSourcePort)
-    : BAThread()
+    : ISender()
     , mSocket(nullptr)
     , mDestinationHost(pDestinationHost)
     , mDestinationPort(pDestinationPort)
