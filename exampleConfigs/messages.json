@@ -36,13 +36,13 @@
     },
     {
       "message_id": 2,
-      "header": "basic",
+      "header": "extended",
       "name": "Vector",
-      "endianness": "little",
+      "endianness": "big",
       "fields": [
         {
           "name": "position",
-          "type": "uint16",
+          "type": "float",
           "byte_offset": 0,
           "array_length": 3
         }
@@ -68,14 +68,26 @@
 
   "reactions": [
     {
-      "on_receive": "Heartbeat",
+      "type": "respond",
+      "trigger": "Heartbeat",
       "receiver": "telemetry_udp_in",
-      "respond_with": "Vector",
+      "response": "Vector",
       "sender": "telemetry_udp_out",
       "period_ms": 1000,
       "on_timeout": "send_defaults",
       "default_values": {
         "position": [1.0, 2.0, 3.0]
+      }
+    },
+    {
+      "type": "periodic_sender",
+      "response": "Heartbeat",
+      "sender": "telemetry_udp_out",
+      "period_ms": 1000,
+      "on_timeout": "send_defaults",
+      "default_values": {
+        "timestamp": 123456,
+		"status": 8
       }
     }
   ]

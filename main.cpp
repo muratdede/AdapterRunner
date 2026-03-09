@@ -30,7 +30,16 @@ int main(int argc, char *argv[])
     MessageParser parser(&schema);
     MessageSerializer serializer(&schema);
     ReactionEngine engine(&tm, &parser, &serializer);
-    engine.loadReactions("../exampleConfigs/messages.json");
+
+    QFile file("../exampleConfigs/messages.json");
+    QJsonArray reactionsArray;
+    if (file.open(QIODevice::ReadOnly))
+    {
+        auto doc = QJsonDocument::fromJson(file.readAll());
+        reactionsArray = doc.object()["reactions"].toArray();
+        file.close();
+    }
+    engine.loadReactions(reactionsArray);
 
     // Debug: log all received messages on all receivers
     auto& receivers = tm.receivers();

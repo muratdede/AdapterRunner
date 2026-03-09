@@ -27,8 +27,10 @@ SOURCES += \
     src/message/messageparser.cpp \
     src/message/messageserializer.cpp \
     src/message/protocolschema.cpp \
+    src/reaction/periodicsenderbehaviour.cpp \
     src/reaction/reactionengine.cpp \
-    src/reaction/reactionrulecontroller.cpp \
+    src/reaction/respondbehaviour.cpp \
+    src/reaction/respondwithlastbehaviour.cpp \
     src/thread/bathread.cpp
 
 # Default rules for deployment.
@@ -54,6 +56,9 @@ HEADERS += \
     src/message/parsedheader.h \
     src/message/parsedmessage.h \
     src/message/protocolschema.h \
+    src/reaction/ibehaviour.h \
+    src/reaction/periodicsenderbehaviour.h \
     src/reaction/reactionengine.h \
-    src/reaction/reactionrulecontroller.h \
+    src/reaction/respondbehaviour.h \
+    src/reaction/respondwithlastbehaviour.h \
     src/thread/bathread.h
