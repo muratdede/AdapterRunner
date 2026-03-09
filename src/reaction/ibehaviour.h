@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QMap>
 #include <QVariant>
+#include <QStringList>
 
 class IBehaviour : public QObject
 {
@@ -16,6 +17,9 @@ public:
     virtual void onMessageReceived(const QString& receiverName,
                                    const QString& messageName,
                                    const QMap<QString, QVariant>& values) = 0;
+
+    /// Returns all receiver names this behaviour needs to be connected to
+    virtual QStringList requiredReceivers() const = 0;
 };
 
 #endif // IBEHAVIOUR_H

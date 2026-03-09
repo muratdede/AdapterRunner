@@ -1,31 +1,8 @@
 #include "periodicsenderbehaviour.h"
+#include "src/common/jsonutils.h"
 
 #include <QJsonArray>
 #include <QDebug>
-
-static QMap<QString, QVariant> parseValues(const QJsonObject& obj)
-{
-    QMap<QString, QVariant> result;
-    for (auto it = obj.begin(); it != obj.end(); ++it)
-    {
-        if (it.value().isArray())
-        {
-            QVariantList list;
-            for (auto v : it.value().toArray())
-                list.append(v.toDouble());
-            result[it.key()] = list;
-        }
-        else if (it.value().isDouble())
-        {
-            result[it.key()] = it.value().toDouble();
-        }
-        else
-        {
-            result[it.key()] = it.value().toVariant();
-        }
-    }
-    return result;
-}
 
 PeriodicSenderBehaviour::PeriodicSenderBehaviour(const QJsonObject &config, ISender *sender, MessageSerializer *serializer, QObject *parent)
     : IBehaviour(parent)
@@ -36,39 +13,28 @@ PeriodicSenderBehaviour::PeriodicSenderBehaviour(const QJsonObject &config, ISen
 {
     int periodMs = config["period_ms"].toInt(100);
 
-    qDebug() << "PeriodicSenderBehaviour" << mResponseMessage << ">> ";
-
-    // Parse sources array
+    // Create trackers and mappings from sources array
     auto sourcesArray = config["sources"].toArray();
     for (int i = 0; i < sourcesArray.size(); ++i)
     {
         auto srcObj = sourcesArray[i].toObject();
 
-        SourceEntry entry;
-        entry.message = srcObj["message"].toString();
-        entry.receiver = srcObj["receiver"].toString();
-        entry.timeoutMs = srcObj["timeout_ms"].toInt(0);
-        entry.defaultValues = parseValues(srcObj["default_values"].toObject());
-        entry.alive = false;
+        auto defaults = JsonUtils::parseValues(srcObj["default_values"].toObject());
 
-        // Create per-source watchdog timer
-        if (entry.timeoutMs > 0)
-        {
-            entry.watchdog = new QTimer(this);
-            entry.watchdog->setSingleShot(true);
-            entry.watchdog->setInterval(entry.timeoutMs);
+        auto* tracker = new SourceTracker(
+            srcObj["message"].toString(),
+            srcObj["receiver"].toString(),
+            srcObj["timeout_ms"].toInt(0),
+            defaults,
+            this
+        );
 
-            int idx = i;
-            connect(entry.watchdog, &QTimer::timeout, this, [this, idx]() {
-                onSourceTimeout(idx);
-            });
-        }
+        mTrackers.append(tracker);
+        mMappings.append(FieldMapping::fromJsonArray(srcObj["mappings"].toArray()));
 
-        mSources.append(entry);
-
-        qDebug() << ">> source[" << i << "]"
-                 << entry.message << "on" << entry.receiver
-                 << "timeout:" << entry.timeoutMs << "ms";
+        qDebug() << "PeriodicSenderBehaviour: source[" << i << "]"
+                 << tracker->messageName() << "on" << tracker->receiverName()
+                 << "mappings:" << mMappings.last().size();
     }
 
     // Start periodic send timer
@@ -79,69 +45,55 @@ PeriodicSenderBehaviour::PeriodicSenderBehaviour(const QJsonObject &config, ISen
 
     qDebug() << "PeriodicSenderBehaviour: response=" << mResponseMessage
              << "period=" << periodMs << "ms"
-             << "sources:" << mSources.size();
+             << "sources:" << mTrackers.size();
 }
 
 void PeriodicSenderBehaviour::onMessageReceived(const QString &receiverName, const QString &messageName, const QMap<QString, QVariant> &values)
 {
-    for (int i = 0; i < mSources.size(); ++i)
+    for (SourceTracker* tracker : qAsConst(mTrackers))
     {
-        SourceEntry& src = mSources[i];
-
-        if (receiverName == src.receiver && messageName == src.message)
-        {
-            src.lastReceivedValues = values;
-            src.alive = true;
-
-            // Reset watchdog
-            if (src.watchdog)
-                src.watchdog->start();
-        }
+        if (receiverName == tracker->receiverName() && messageName == tracker->messageName())
+            tracker->feed(values);
     }
-}
-
-void PeriodicSenderBehaviour::onSourceTimeout(int sourceIndex)
-{
-    if (sourceIndex < 0 || sourceIndex >= mSources.size())
-        return;
-
-    SourceEntry& src = mSources[sourceIndex];
-    src.alive = false;
-
-    qDebug() << "PeriodicSenderBehaviour: source timeout -" << src.message
-             << "(falling back to defaults)";
 }
 
 void PeriodicSenderBehaviour::onTimerTick()
 {
-    if (!mSender)
-        return;
-
-    // If ALL sources timed out → don't send
-    if (!hasAnyAliveSource())
+    if (!mSender || !hasAnyAliveSource())
         return;
 
     auto merged = buildMergedValues();
 
     QByteArray frame = mSerializer->buildFrame(mResponseMessage, merged);
-    if (frame.isEmpty())
-        return;
-
-    mSender->send(frame);
+    if (!frame.isEmpty())
+        mSender->send(frame);
 }
 
-QMap<QString, QVariant> PeriodicSenderBehaviour::buildMergedValues() const
+QMap<QString, QVariant> PeriodicSenderBehaviour::buildMergedValues()
 {
     QMap<QString, QVariant> merged;
 
-    for (const SourceEntry& src : mSources)
+    for (int i = 0; i < mTrackers.size(); ++i)
     {
-        // Use last received values if alive, otherwise defaults
-        const auto& values = src.alive ? src.lastReceivedValues : src.defaultValues;
+        const auto& values = mTrackers[i]->currentValues();
+        const auto& mappings = mMappings[i];
 
-        for (auto it = values.begin(); it != values.end(); ++it)
+        if (mappings.isEmpty())
         {
-            merged.insert(it.key(), it.value());
+            // No mappings defined → direct pass-through by field name
+            for (auto it = values.begin(); it != values.end(); ++it)
+                merged.insert(it.key(), it.value());
+        }
+        else
+        {
+            // Apply expression-based mappings
+            mEvaluator.setVariables(values);
+
+            for (const FieldMapping& mapping : mappings)
+            {
+                QVariant result = mEvaluator.evaluate(mapping.expression);
+                merged.insert(mapping.targetField, result);
+            }
         }
     }
 
@@ -150,9 +102,9 @@ QMap<QString, QVariant> PeriodicSenderBehaviour::buildMergedValues() const
 
 bool PeriodicSenderBehaviour::hasAnyAliveSource() const
 {
-    for (const SourceEntry& src : mSources)
+    for (const SourceTracker* tracker : mTrackers)
     {
-        if (src.alive)
+        if (tracker->isAlive())
             return true;
     }
     return false;
@@ -161,10 +113,11 @@ bool PeriodicSenderBehaviour::hasAnyAliveSource() const
 QStringList PeriodicSenderBehaviour::requiredReceivers() const
 {
     QStringList list;
-    for (const SourceEntry& src : mSources)
+    for (const SourceTracker* tracker : mTrackers)
     {
-        if (!list.contains(src.receiver))
-            list.append(src.receiver);
+        QString r = tracker->receiverName();
+        if (!r.isEmpty() && !list.contains(r))
+            list.append(r);
     }
     return list;
 }

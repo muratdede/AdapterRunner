@@ -1,31 +1,7 @@
 #include "respondwithlastbehaviour.h"
+#include "src/common/jsonutils.h"
 
-#include <QJsonArray>
 #include <QDebug>
-
-static QMap<QString, QVariant> parseDefaults(const QJsonObject& obj)
-{
-    QMap<QString, QVariant> result;
-    for (auto it = obj.begin(); it != obj.end(); ++it)
-    {
-        if (it.value().isArray())
-        {
-            QVariantList list;
-            for (auto v : it.value().toArray())
-                list.append(v.toDouble());
-            result[it.key()] = list;
-        }
-        else if (it.value().isDouble())
-        {
-            result[it.key()] = it.value().toDouble();
-        }
-        else
-        {
-            result[it.key()] = it.value().toVariant();
-        }
-    }
-    return result;
-}
 
 RespondWithLastBehaviour::RespondWithLastBehaviour(const QJsonObject &config, ISender *sender, MessageSerializer *serializer, QObject *parent)
     : IBehaviour(parent)
@@ -34,15 +10,23 @@ RespondWithLastBehaviour::RespondWithLastBehaviour(const QJsonObject &config, IS
     , mResponseMessage(config["response"].toString())
     , mSender(sender)
     , mSerializer(serializer)
-    , mSourceMessage(config["source_message"].toString())
-    , mSourceReceiver(config["source_receiver"].toString())
-    , mDefaultValues(parseDefaults(config["default_values"].toObject()))
-    , mHasReceivedSource(false)
+    , mSourceTracker(nullptr)
     , mWatchdog(nullptr)
     , mPeriodMs(config["period_ms"].toInt(0))
     , mOnTimeout(config["on_timeout"].toString("stop"))
     , mActive(true)
 {
+    // Create source tracker
+    auto defaults = JsonUtils::parseValues(config["default_values"].toObject());
+    mSourceTracker = new SourceTracker(
+        config["source_message"].toString(),
+        config["source_receiver"].toString(),
+        config["source_timeout_ms"].toInt(0),
+        defaults,
+        this
+    );
+
+    // Watchdog for trigger message
     if (mPeriodMs > 0)
     {
         mWatchdog = new QTimer(this);
@@ -54,41 +38,31 @@ RespondWithLastBehaviour::RespondWithLastBehaviour(const QJsonObject &config, IS
 
     qDebug() << "RespondWithLastBehaviour: trigger=" << mTriggerMessage
              << "response=" << mResponseMessage
-             << "source=" << mSourceMessage << "on" << mSourceReceiver
+             << "source=" << mSourceTracker->messageName()
              << "period=" << mPeriodMs << "ms";
 }
 
 void RespondWithLastBehaviour::onMessageReceived(const QString &receiverName, const QString &messageName, const QMap<QString, QVariant> &values)
 {
-    // Track source message
-    if (receiverName == mSourceReceiver && messageName == mSourceMessage)
-    {
-        mLastReceivedValues = values;
-        mHasReceivedSource = true;
-    }
+    // Feed source tracker
+    if (receiverName == mSourceTracker->receiverName() && messageName == mSourceTracker->messageName())
+        mSourceTracker->feed(values);
 
     // Check trigger
     if (receiverName == mReceiverName && messageName == mTriggerMessage)
     {
         mActive = true;
-        resetWatchdog();
+        if (mWatchdog) mWatchdog->start();
         sendResponse();
     }
 }
 
 void RespondWithLastBehaviour::onWatchdogTimeout()
 {
-    qDebug() << "RespondWithLastBehaviour: timeout" << mTriggerMessage << "->" << mResponseMessage
-             << "on_timeout:" << mOnTimeout;
-
     if (mOnTimeout == "send_defaults")
-    {
         sendResponse();
-    }
     else
-    {
         mActive = false;
-    }
 }
 
 void RespondWithLastBehaviour::sendResponse()
@@ -96,20 +70,17 @@ void RespondWithLastBehaviour::sendResponse()
     if (!mActive || !mSender)
         return;
 
-    const auto& values = mHasReceivedSource ? mLastReceivedValues : mDefaultValues;
-
+    const auto& values = mSourceTracker->currentValues();
     QByteArray frame = mSerializer->buildFrame(mResponseMessage, values);
-    if (frame.isEmpty())
-        return;
-
-    mSender->send(frame);
-    qDebug() << "RespondWithLastBehaviour: sent" << mResponseMessage
-             << "(" << frame.size() << "bytes)"
-             << (mHasReceivedSource ? "[last received]" : "[defaults]");
+    if (!frame.isEmpty())
+        mSender->send(frame);
 }
 
-void RespondWithLastBehaviour::resetWatchdog()
+QStringList RespondWithLastBehaviour::requiredReceivers() const
 {
-    if (mWatchdog)
-        mWatchdog->start();
+    QStringList list = {mReceiverName};
+    QString sourceReceiver = mSourceTracker->receiverName();
+    if (!sourceReceiver.isEmpty() && !list.contains(sourceReceiver))
+        list.append(sourceReceiver);
+    return list;
 }

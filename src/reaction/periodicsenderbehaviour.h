@@ -2,6 +2,9 @@
 #define PERIODICSENDERBEHAVIOUR_H
 
 #include "ibehaviour.h"
+#include "sourcetracker.h"
+#include "fieldmapping.h"
+#include "expressioneval.h"
 
 #include <QTimer>
 #include <QVector>
@@ -9,19 +12,6 @@
 
 #include "src/conn/transport/isender.h"
 #include "src/message/messageserializer.h"
-
-struct SourceEntry
-{
-    QString message;
-    QString receiver;
-    int timeoutMs = 0;
-    QMap<QString, QVariant> defaultValues;
-
-    // Runtime state
-    QMap<QString, QVariant> lastReceivedValues;
-    QTimer* watchdog = nullptr;
-    bool alive = false;
-};
 
 class PeriodicSenderBehaviour : public IBehaviour
 {
@@ -36,22 +26,23 @@ public:
                            const QString& messageName,
                            const QMap<QString, QVariant>& values) override;
 
-    /// Returns the list of receiver names this behaviour needs
-    QStringList requiredReceivers() const;
+    QStringList requiredReceivers() const override;
 
 private slots:
     void onTimerTick();
-    void onSourceTimeout(int sourceIndex);
 
 private:
-    QMap<QString, QVariant> buildMergedValues() const;
+    QMap<QString, QVariant> buildMergedValues();
     bool hasAnyAliveSource() const;
 
     QString mResponseMessage;
     ISender* mSender;
     MessageSerializer* mSerializer;
     QTimer* mPeriodicTimer;
-    QVector<SourceEntry> mSources;
+
+    QVector<SourceTracker*> mTrackers;
+    QVector<QVector<FieldMapping>> mMappings;  // per-tracker mappings
+    ExpressionEvaluator mEvaluator;
 };
 
 #endif // PERIODICSENDERBEHAVIOUR_H

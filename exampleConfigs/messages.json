@@ -6,8 +6,16 @@
       "endianness": "little",
       "header_size": 4,
       "fields": [
-        { "name": "msg_id", "type": "uint8", "byte_offset": 2 },
-        { "name": "length", "type": "uint8", "byte_offset": 3 }
+        {
+          "name": "msg_id",
+          "type": "uint8",
+          "byte_offset": 2
+        },
+        {
+          "name": "length",
+          "type": "uint8",
+          "byte_offset": 3
+        }
       ]
     },
     {
@@ -16,13 +24,24 @@
       "endianness": "little",
       "header_size": 7,
       "fields": [
-        { "name": "msg_id", "type": "uint16", "byte_offset": 2 },
-        { "name": "length", "type": "uint16", "byte_offset": 4 },
-        { "name": "version", "type": "uint8", "byte_offset": 6 }
+        {
+          "name": "msg_id",
+          "type": "uint16",
+          "byte_offset": 2
+        },
+        {
+          "name": "length",
+          "type": "uint16",
+          "byte_offset": 4
+        },
+        {
+          "name": "version",
+          "type": "uint8",
+          "byte_offset": 6
+        }
       ]
     }
   ],
-
   "messages": [
     {
       "message_id": 1,
@@ -30,8 +49,17 @@
       "name": "Heartbeat",
       "endianness": "little",
       "fields": [
-        { "name": "timestamp", "type": "uint32", "byte_offset": 0, "endianness": "big" },
-        { "name": "status", "type": "uint8", "byte_offset": 4 }
+        {
+          "name": "timestamp",
+          "type": "uint32",
+          "byte_offset": 0,
+          "endianness": "big"
+        },
+        {
+          "name": "status",
+          "type": "uint8",
+          "byte_offset": 4
+        }
       ]
     },
     {
@@ -42,7 +70,7 @@
       "fields": [
         {
           "name": "position",
-          "type": "uint16",
+          "type": "float",
           "byte_offset": 0,
           "array_length": 3
         }
@@ -54,7 +82,11 @@
       "name": "DynamicPayload",
       "endianness": "little",
       "fields": [
-        { "name": "count", "type": "uint8", "byte_offset": 0 },
+        {
+          "name": "count",
+          "type": "uint8",
+          "byte_offset": 0
+        },
         {
           "name": "values",
           "type": "uint16",
@@ -70,35 +102,51 @@
       "name": "ComposeMessage",
       "endianness": "little",
       "fields": [
-        { "name": "timestamp", "type": "uint32", "byte_offset": 0, "endianness": "big" },
-        { "name": "status", "type": "uint8", "byte_offset": 4 },
-		{ "name": "position", "type": "uint16", "byte_offset": 5, "array_length": 3 }
+        {
+          "name": "timestamp",
+          "type": "uint32",
+          "byte_offset": 0,
+          "endianness": "big"
+        },
+        {
+          "name": "status",
+          "type": "uint8",
+          "byte_offset": 4
+        },
+        {
+          "name": "position",
+          "type": "uint16",
+          "byte_offset": 5,
+          "array_length": 3
+        }
       ]
     }
   ],
-
   "reactions": [
     {
       "type": "periodic_sender",
-	  "sources": [
-	    {
-		  "message": "Heartbeat",
-		  "receiver": "telemetry_udp_in",
-		  "timeout_ms": 10000,
-		  "default_values": {
-			"timestamp": 123456,
-			"status": 8
-		  }
-	    },
-		{
-		  "message": "Vector",
-		  "receiver": "telemetry_udp_in",
-		  "timeout_ms": 10000,
-		  "default_values": {
-			"position": [0, 0, 0]
-		  }
-		}
-	  ],
+      "sources": [
+        {
+          "message": "Heartbeat",
+          "receiver": "telemetry_udp_in",
+          "timeout_ms": 10000,
+          "default_values": {
+            "timestamp": 123456,
+            "status": 8
+          }
+        },
+        {
+          "message": "Vector",
+          "receiver": "telemetry_udp_in",
+          "timeout_ms": 10000,
+          "default_values": {
+            "position": [0, 0, 0]
+          },
+          "mappings": [
+            { "to": "position", "expr": "position.map(x => int(x * 100))" }
+          ]
+        }
+      ],
       "response": "ComposeMessage",
       "sender": "telemetry_udp_out",
       "period_ms": 1000,

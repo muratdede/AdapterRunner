@@ -1,10 +1,6 @@
 #include <QCoreApplication>
 
 #include <QDebug>
-#include <QFile>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
 
 #include "src/conn/transport/transportmanager.h"
 
@@ -26,20 +22,12 @@ int main(int argc, char *argv[])
     ProtocolSchema schema;
     schema.load("../exampleConfigs/messages.json");
 
-    // Load reactions from messages.json
     MessageParser parser(&schema);
     MessageSerializer serializer(&schema);
-    ReactionEngine engine(&tm, &parser, &serializer);
 
-    QFile file("../exampleConfigs/messages.json");
-    QJsonArray reactionsArray;
-    if (file.open(QIODevice::ReadOnly))
-    {
-        auto doc = QJsonDocument::fromJson(file.readAll());
-        reactionsArray = doc.object()["reactions"].toArray();
-        file.close();
-    }
-    engine.loadReactions(reactionsArray);
+    // Load and start reaction engine
+    ReactionEngine engine(&tm, &parser, &serializer);
+    engine.loadFromFile("../exampleConfigs/messages.json");
 
     // Debug: log all received messages on all receivers
     auto& receivers = tm.receivers();
@@ -57,12 +45,9 @@ int main(int argc, char *argv[])
                 return;
             }
 
-            auto valueNames = message.values.keys();
             qDebug() << "////" << name << "////" << message.name << "////";
-            for (const auto &valueName : valueNames)
-            {
-                qDebug() << "  " << valueName << ":" << message.values.value(valueName);
-            }
+            for (auto it = message.values.begin(); it != message.values.end(); ++it)
+                qDebug() << "  " << it.key() << ":" << it.value();
         });
     }
 
@@ -70,6 +55,8 @@ int main(int argc, char *argv[])
     AA 55 01 05 01 02 03 04 03
     AA 55 02 06 01 00 02 00 03 00
     AA 55 03 07 03 00 01 00 02 00 03
+
+    AA 55 02 0c a4 70 9d 3f a4 70 9d 3f a4 70 9d 3f // Vector float 1.23, 1.23, 1.23
     */
 
     return a.exec();

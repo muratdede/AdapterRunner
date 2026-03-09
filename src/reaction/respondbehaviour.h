@@ -22,12 +22,13 @@ public:
                            const QString& messageName,
                            const QMap<QString, QVariant>& values) override;
 
+    QStringList requiredReceivers() const override;
+
 private slots:
     void onWatchdogTimeout();
 
 private:
     void sendResponse();
-    void resetWatchdog();
 
     QString mTriggerMessage;
     QString mReceiverName;

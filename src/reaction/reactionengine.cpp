@@ -1,121 +1,93 @@
 #include "reactionengine.h"
 
+#include "periodicsenderbehaviour.h"
 #include "respondbehaviour.h"
 #include "respondwithlastbehaviour.h"
-#include "periodicsenderbehaviour.h"
 
-#include <QJsonObject>
-#include <QJsonArray>
 #include <QDebug>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 
-ReactionEngine::ReactionEngine(TransportManager *tm, MessageParser *parser, MessageSerializer *serializer, QObject *parent)
-    : QObject(parent)
-    , mTransportManager(tm)
-    , mParser(parser)
-    , mSerializer(serializer)
-{
+ReactionEngine::ReactionEngine(TransportManager *tm, MessageParser *parser,
+                               MessageSerializer *serializer, QObject *parent)
+    : QObject(parent), mTransportManager(tm), mParser(parser),
+      mSerializer(serializer) {}
+
+void ReactionEngine::loadFromFile(const QString &messagesJsonPath) {
+  QFile file(messagesJsonPath);
+  if (!file.open(QIODevice::ReadOnly)) {
+    qWarning() << "ReactionEngine: cannot open" << messagesJsonPath;
+    return;
+  }
+
+  auto doc = QJsonDocument::fromJson(file.readAll());
+  auto reactions = doc.object()["reactions"].toArray();
+
+  for (const auto &val : reactions) {
+    IBehaviour *behaviour = createBehaviour(val.toObject());
+    if (!behaviour)
+      continue;
+
+    // Connect all receivers this behaviour needs
+    for (const auto &receiverName : behaviour->requiredReceivers())
+      connectReceiver(receiverName);
+
+    mBehaviours.append(behaviour);
+  }
 }
 
-void ReactionEngine::loadReactions(const QJsonArray &reactions)
-{
-    for (const auto& val : reactions)
-    {
-        auto config = val.toObject();
+IBehaviour *ReactionEngine::createBehaviour(const QJsonObject &config) {
+  QString type = config["type"].toString();
 
-        IBehaviour* behaviour = createBehaviour(config);
-        if (!behaviour)
-            continue;
+  // Resolve sender
+  QString senderName = config["sender"].toString();
+  ISender *sender = mTransportManager->getSender(senderName);
+  if (!sender) {
+    qWarning() << "ReactionEngine: sender not found:" << senderName;
+    return nullptr;
+  }
 
-        mBehaviours.append(behaviour);
-    }
+  // Create behaviour by type
+  if (type == "respond")
+    return new RespondBehaviour(config, sender, mSerializer, this);
+
+  if (type == "respond_with_last")
+    return new RespondWithLastBehaviour(config, sender, mSerializer, this);
+
+  if (type == "periodic_sender")
+    return new PeriodicSenderBehaviour(config, sender, mSerializer, this);
+
+  qWarning() << "ReactionEngine: unknown behaviour type:" << type;
+  return nullptr;
 }
 
-IBehaviour* ReactionEngine::createBehaviour(const QJsonObject &config)
-{
-    QString type = config["type"].toString();
+void ReactionEngine::connectReceiver(const QString &receiverName) {
+  if (receiverName.isEmpty() || mConnectedReceivers.contains(receiverName))
+    return;
 
-    // Resolve sender
-    QString senderName = config["sender"].toString();
-    ISender* sender = mTransportManager->getSender(senderName);
-    if (!sender)
-    {
-        qWarning() << "ReactionEngine: sender not found:" << senderName;
-        return nullptr;
-    }
+  ITransport *receiver = mTransportManager->getReceiver(receiverName);
+  if (!receiver) {
+    qWarning() << "ReactionEngine: receiver not found:" << receiverName;
+    return;
+  }
 
-    // Create behaviour by type
-    IBehaviour* behaviour = nullptr;
+  connect(receiver, &ITransport::newMessageFromRemote, this,
+          [this, receiverName](const QByteArray &data) {
+            onReceiverData(data, receiverName);
+          });
 
-    if (type == "respond")
-    {
-        behaviour = new RespondBehaviour(config, sender, mSerializer, this);
-    }
-    else if (type == "respond_with_last")
-    {
-        behaviour = new RespondWithLastBehaviour(config, sender, mSerializer, this);
-    }
-    else if (type == "periodic_sender")
-    {
-        behaviour = new PeriodicSenderBehaviour(config, sender, mSerializer, this);
-    }
-    else
-    {
-        qWarning() << "ReactionEngine: unknown behaviour type:" << type;
-        return nullptr;
-    }
-
-    // Collect all receiver names this behaviour needs
-    QStringList receiverNames;
-
-    // Top-level keys
-    for (const auto& key : {"receiver", "source_receiver"})
-    {
-        QString name = config[key].toString();
-        if (!name.isEmpty())
-            receiverNames.append(name);
-    }
-
-    // PeriodicSender sources
-    auto* periodic = qobject_cast<PeriodicSenderBehaviour*>(behaviour);
-    if (periodic)
-    {
-        receiverNames.append(periodic->requiredReceivers());
-    }
-
-    // Connect receivers (avoid duplicates)
-    for (const auto& receiverName : receiverNames)
-    {
-        if (mConnectedReceivers.contains(receiverName))
-            continue;
-
-        ITransport* receiver = mTransportManager->getReceiver(receiverName);
-        if (!receiver)
-        {
-            qWarning() << "ReactionEngine: receiver not found:" << receiverName;
-            continue;
-        }
-
-        connect(receiver, &ITransport::newMessageFromRemote, this,
-                [this, receiverName](const QByteArray& data) {
-                    onReceiverData(data, receiverName);
-                });
-        mConnectedReceivers.insert(receiverName);
-    }
-
-    return behaviour;
+  mConnectedReceivers.insert(receiverName);
 }
 
-void ReactionEngine::onReceiverData(const QByteArray &data, const QString &receiverName)
-{
-    // Parse ONCE
-    ParsedMessage message = mParser->parseFrame(data);
+void ReactionEngine::onReceiverData(const QByteArray &data,
+                                    const QString &receiverName) {
+  ParsedMessage message = mParser->parseFrame(data);
 
-    if (message.name.isEmpty())
-        return;
+  if (message.name.isEmpty())
+    return;
 
-    // Dispatch to ALL behaviours
-    for (IBehaviour* behaviour : mBehaviours)
-    {
-        behaviour->onMessageReceived(receiverName, message.name, message.values);
-    }
+  for (IBehaviour *behaviour : mBehaviours)
+    behaviour->onMessageReceived(receiverName, message.name, message.values);
 }

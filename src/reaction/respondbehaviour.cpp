@@ -1,31 +1,7 @@
 #include "respondbehaviour.h"
+#include "src/common/jsonutils.h"
 
-#include <QJsonArray>
 #include <QDebug>
-
-static QMap<QString, QVariant> parseDefaultValues(const QJsonObject& obj)
-{
-    QMap<QString, QVariant> result;
-    for (auto it = obj.begin(); it != obj.end(); ++it)
-    {
-        if (it.value().isArray())
-        {
-            QVariantList list;
-            for (auto v : it.value().toArray())
-                list.append(v.toDouble());
-            result[it.key()] = list;
-        }
-        else if (it.value().isDouble())
-        {
-            result[it.key()] = it.value().toDouble();
-        }
-        else
-        {
-            result[it.key()] = it.value().toVariant();
-        }
-    }
-    return result;
-}
 
 RespondBehaviour::RespondBehaviour(const QJsonObject &config, ISender *sender, MessageSerializer *serializer, QObject *parent)
     : IBehaviour(parent)
@@ -34,7 +10,7 @@ RespondBehaviour::RespondBehaviour(const QJsonObject &config, ISender *sender, M
     , mResponseMessage(config["response"].toString())
     , mSender(sender)
     , mSerializer(serializer)
-    , mDefaultValues(parseDefaultValues(config["default_values"].toObject()))
+    , mDefaultValues(JsonUtils::parseValues(config["default_values"].toObject()))
     , mWatchdog(nullptr)
     , mPeriodMs(config["period_ms"].toInt(0))
     , mOnTimeout(config["on_timeout"].toString("stop"))
@@ -62,23 +38,16 @@ void RespondBehaviour::onMessageReceived(const QString &receiverName, const QStr
         return;
 
     mActive = true;
-    resetWatchdog();
+    if (mWatchdog) mWatchdog->start();
     sendResponse();
 }
 
 void RespondBehaviour::onWatchdogTimeout()
 {
-    qDebug() << "RespondBehaviour: timeout" << mTriggerMessage << "->" << mResponseMessage
-             << "on_timeout:" << mOnTimeout;
-
     if (mOnTimeout == "send_defaults")
-    {
         sendResponse();
-    }
     else
-    {
         mActive = false;
-    }
 }
 
 void RespondBehaviour::sendResponse()
@@ -87,15 +56,11 @@ void RespondBehaviour::sendResponse()
         return;
 
     QByteArray frame = mSerializer->buildFrame(mResponseMessage, mDefaultValues);
-    if (frame.isEmpty())
-        return;
-
-    mSender->send(frame);
-    qDebug() << "RespondBehaviour: sent" << mResponseMessage << "(" << frame.size() << "bytes)";
+    if (!frame.isEmpty())
+        mSender->send(frame);
 }
 
-void RespondBehaviour::resetWatchdog()
+QStringList RespondBehaviour::requiredReceivers() const
 {
-    if (mWatchdog)
-        mWatchdog->start();
+    return {mReceiverName};
 }

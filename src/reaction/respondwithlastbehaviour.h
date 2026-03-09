@@ -2,6 +2,7 @@
 #define RESPONDWITHLASTBEHAVIOUR_H
 
 #include "ibehaviour.h"
+#include "sourcetracker.h"
 
 #include <QTimer>
 #include <QJsonObject>
@@ -22,30 +23,27 @@ public:
                            const QString& messageName,
                            const QMap<QString, QVariant>& values) override;
 
+    QStringList requiredReceivers() const override;
+
 private slots:
     void onWatchdogTimeout();
 
 private:
     void sendResponse();
-    void resetWatchdog();
 
     // Trigger config
     QString mTriggerMessage;
     QString mReceiverName;
 
-    // Response config
+    // Response
     QString mResponseMessage;
     ISender* mSender;
     MessageSerializer* mSerializer;
 
-    // Source tracking
-    QString mSourceMessage;
-    QString mSourceReceiver;
-    QMap<QString, QVariant> mLastReceivedValues;
-    QMap<QString, QVariant> mDefaultValues;
-    bool mHasReceivedSource;
+    // Source tracking (delegated)
+    SourceTracker* mSourceTracker;
 
-    // Watchdog
+    // Watchdog for trigger
     QTimer* mWatchdog;
     int mPeriodMs;
     QString mOnTimeout;

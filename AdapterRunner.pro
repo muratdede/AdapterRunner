@@ -1,5 +1,5 @@
 QT -= gui
-QT += network serialport
+QT += network serialport qml
 
 CONFIG += c++17 console
 CONFIG -= app_bundle
@@ -27,10 +27,12 @@ SOURCES += \
     src/message/messageparser.cpp \
     src/message/messageserializer.cpp \
     src/message/protocolschema.cpp \
-    src/reaction/periodicsenderbehaviour.cpp \
+    src/reaction/expressioneval.cpp \
     src/reaction/reactionengine.cpp \
     src/reaction/respondbehaviour.cpp \
     src/reaction/respondwithlastbehaviour.cpp \
+    src/reaction/periodicsenderbehaviour.cpp \
+    src/reaction/sourcetracker.cpp \
     src/thread/bathread.cpp
 
 # Default rules for deployment.
@@ -39,6 +41,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+    src/common/jsonutils.h \
     src/conn/network/basynctcpdatareceiver.h \
     src/conn/network/basynctcpdatasender.h \
     src/conn/network/basyncudpdatareceiver.h \
@@ -56,9 +59,12 @@ HEADERS += \
     src/message/parsedheader.h \
     src/message/parsedmessage.h \
     src/message/protocolschema.h \
+    src/reaction/expressioneval.h \
+    src/reaction/fieldmapping.h \
     src/reaction/ibehaviour.h \
-    src/reaction/periodicsenderbehaviour.h \
     src/reaction/reactionengine.h \
     src/reaction/respondbehaviour.h \
     src/reaction/respondwithlastbehaviour.h \
+    src/reaction/periodicsenderbehaviour.h \
+    src/reaction/sourcetracker.h \
     src/thread/bathread.h
