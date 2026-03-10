@@ -18,6 +18,8 @@ public:
     const MessageDef* getMessageByName(const QString& name) const;
     const HeaderDef* getHeader(const QString& type) const;
 
+    bool matchesHeader(const QByteArray& data, const HeaderDef& header) const;
+
 private:
     QSysInfo::Endian parseEndianness(const QString& str);
     FieldType parseFieldType(const QString& type);

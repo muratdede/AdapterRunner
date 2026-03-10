@@ -80,13 +80,11 @@ QMap<QString, QVariant> PeriodicSenderBehaviour::buildMergedValues()
         const auto& values = mTrackers[i]->currentValues();
         const auto& mappings = mMappings[i];
 
-        if (mappings.isEmpty())
-        {
-            // No mappings defined → direct pass-through by field name
-            for (auto it = values.begin(); it != values.end(); ++it)
-                merged.insert(it.key(), it.value());
-        }
-        else
+        // No mappings defined → direct pass-through by field name
+        for (auto it = values.begin(); it != values.end(); ++it)
+            merged.insert(it.key(), it.value());
+
+        if (!mappings.isEmpty())
         {
             // Apply expression-based mappings
             mEvaluator.setVariables(values);

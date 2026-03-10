@@ -24,6 +24,7 @@ SOURCES += \
     src/conn/serial/bserialsenderreceiver.cpp \
     src/conn/transport/transportfactory.cpp \
     src/conn/transport/transportmanager.cpp \
+    src/message/Utils.cpp \
     src/message/messageparser.cpp \
     src/message/messageserializer.cpp \
     src/message/protocolschema.cpp \

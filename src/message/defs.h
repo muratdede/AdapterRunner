@@ -45,13 +45,14 @@ struct FieldDef
     QString arrayLengthField;
 
     ComputeDef compute;
+
+    bool isIdentifier = false;
+    QVector<int> matchValues;
 };
 
 struct HeaderDef
 {
     QString type;
-
-    QByteArray startBytes;
 
     QSysInfo::Endian endian;
 

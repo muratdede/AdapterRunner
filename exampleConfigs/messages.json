@@ -2,10 +2,16 @@
   "headers": [
     {
       "type": "basic",
-      "start_bytes": "AA55",
       "endianness": "little",
       "header_size": 4,
       "fields": [
+        {
+          "name": "start_bytes",
+          "type": "uint16",
+          "byte_offset": 0,
+          "identifier": true,
+          "match_values": ["AA55"]
+        },
         {
           "name": "msg_id",
           "type": "uint8",
@@ -20,10 +26,16 @@
     },
     {
       "type": "extended",
-      "start_bytes": "55AA",
       "endianness": "little",
       "header_size": 7,
       "fields": [
+        {
+          "name": "start_bytes",
+          "type": "uint16",
+          "byte_offset": 0,
+          "identifier": true,
+          "match_values": ["55AA"]
+        },
         {
           "name": "msg_id",
           "type": "uint16",

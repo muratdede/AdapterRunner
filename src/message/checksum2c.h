@@ -2,13 +2,18 @@
 #define CHECKSUM2C_H
 
 #include "ichecksumalgorithm.h"
+#include "src/message/defs.h"
 
 class Checksum2C : public IChecksumAlgorithm
 {
 public:
-    uint8_t compute(const QByteArray& data, int rangeStart, int rangeEnd,
-                    int excludeOffset, int excludeSize) const override
+    uint8_t compute(const QByteArray& data, const FieldDef& field) const override
     {
+        int rangeStart = field.compute.rangeStart;
+        int rangeEnd = field.compute.rangeEnd;
+        int excludeOffset = field.compute.excludeSelf ? field.byteOffset : -1;
+        int excludeSize = field.compute.excludeSelf ? field.size : 0;
+
         int end = (rangeEnd < 0) ? data.size() : rangeEnd;
         uint8_t sum = 0;
         for (int i = rangeStart; i < end; ++i)
