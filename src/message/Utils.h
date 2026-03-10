@@ -9,18 +9,18 @@
 
 class Utils {
 public:
-    static QVariant readField(const QByteArray& data, const AbstractField* field, QSysInfo::Endian msgEndian, int arrayLen = 0, int baseOffset = 0);
+    static QVariant readField(const QByteArray& data, const AbstractField* field, QSysInfo::Endian parentEndian, int arrayLen = 0, int baseOffset = 0);
     static void writeField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian endian, int baseOffset = 0);
 
 private:
-    static QVariant readSingleField(const QByteArray &data, const AbstractField* field, QSysInfo::Endian msgEndian, int baseOffset);
-    static QVariant readArrayField(const QByteArray &data, const AbstractField* field, QSysInfo::Endian msgEndian, int length, int baseOffset);
+    static QVariant readArrayField(const QByteArray &data, const AbstractField* field, QSysInfo::Endian parentEndian, int length, int baseOffset);
+    static QVariant readSingleField(const QByteArray &data, const AbstractField* field, QSysInfo::Endian parentEndian, int baseOffset);
 
     // TODO 4 bytelık chunk parcalama da eklenmeli
     static uint64_t extractBits(const QByteArray &data, int byteOffset, int bitOffset, int bitLength);
 
     template<typename T>
-    static T readValue(const QByteArray& data, int offset, QSysInfo::Endian msgEndian)
+    static T readValue(const QByteArray& data, int offset, QSysInfo::Endian endian)
     {
         T val = readRaw<T>(data, offset);
 
@@ -30,8 +30,8 @@ private:
         bool systemLittle = false;
 #endif
 
-        if ((msgEndian == QSysInfo::LittleEndian && !systemLittle) ||
-            (msgEndian == QSysInfo::BigEndian && systemLittle))
+        if ((endian == QSysInfo::LittleEndian && !systemLittle) ||
+            (endian == QSysInfo::BigEndian && systemLittle))
         {
             val = swapEndian(val);
         }
@@ -68,11 +68,11 @@ private:
 
     //----------------------------------------------------------//
 
-    static void writeSingleField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian endian, int baseOffset);
-    static void writeArrayField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian endian, int baseOffset);
+    static void writeArrayField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian parentEndian, int baseOffset);
+    static void writeSingleField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian parentEndian, int baseOffset);
 
     template<typename T>
-    static void writeValue(QByteArray &buffer, int offset, T value, QSysInfo::Endian msgEndian)
+    static void writeValue(QByteArray &buffer, int offset, T value, QSysInfo::Endian endian)
     {
 #if Q_BYTE_ORDER == Q_LITTLE_ENDIAN
         bool systemLittle = true;
@@ -80,8 +80,8 @@ private:
         bool systemLittle = false;
 #endif
 
-        if ((msgEndian == QSysInfo::LittleEndian && !systemLittle) ||
-            (msgEndian == QSysInfo::BigEndian && systemLittle))
+        if ((endian == QSysInfo::LittleEndian && !systemLittle) ||
+            (endian == QSysInfo::BigEndian && systemLittle))
         {
             value = swapEndian(value);
         }

@@ -17,14 +17,9 @@ class PeriodicSenderBehaviour : public IBehaviour
 {
     Q_OBJECT
 public:
-    PeriodicSenderBehaviour(const QJsonObject& config,
-                            ISender* sender,
-                            MessageSerializer* serializer,
-                            QObject* parent = nullptr);
+    PeriodicSenderBehaviour(const QJsonObject& config, ISender* sender, MessageSerializer* serializer, QObject* parent = nullptr);
 
-    void onMessageReceived(const QString& receiverName,
-                           const QString& messageName,
-                           const QMap<QString, QVariant>& values) override;
+    void onMessageReceived(const QString& receiverName, const QString& messageName, const QMap<QString, QVariant>& values) override;
 
     QStringList requiredReceivers() const override;
 
@@ -42,7 +37,7 @@ private:
 
     QVector<SourceTracker*> mTrackers;
     QMap<QString, SourceTracker*> mTrackerByName;  // lookup by message name
-    QVector<QVector<FieldMapping>> mMappings;  // per-tracker mappings
+    QVector<FieldMapping> mMappings;
     ExpressionEvaluator mEvaluator;
 };
 

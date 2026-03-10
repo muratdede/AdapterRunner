@@ -13,14 +13,9 @@ class RespondBehaviour : public IBehaviour
 {
     Q_OBJECT
 public:
-    RespondBehaviour(const QJsonObject& config,
-                     ISender* sender,
-                     MessageSerializer* serializer,
-                     QObject* parent = nullptr);
+    RespondBehaviour(const QJsonObject& config, ISender* sender, MessageSerializer* serializer, QObject* parent = nullptr);
 
-    void onMessageReceived(const QString& receiverName,
-                           const QString& messageName,
-                           const QMap<QString, QVariant>& values) override;
+    void onMessageReceived(const QString& receiverName, const QString& messageName, const QMap<QString, QVariant>& values) override;
 
     QStringList requiredReceivers() const override;
 

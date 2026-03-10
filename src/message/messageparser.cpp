@@ -45,7 +45,8 @@ ParsedMessage MessageParser::parseFrame(const QByteArray& frame)
     // Verify computed fields (e.g. checksum)
     for (const auto& fieldPtr : msgDef->fields)
     {
-        if (fieldPtr->isMessage()) continue;
+        if (fieldPtr->isMessage()) continue; // TODO: make this recursive function
+
         auto fieldObj = std::static_pointer_cast<FieldDef>(fieldPtr);
         const FieldDef& field = *fieldObj;
 

@@ -13,8 +13,7 @@
 class ReactionEngine : public QObject {
   Q_OBJECT
 public:
-  ReactionEngine(TransportManager *tm, MessageParser *parser,
-                 MessageSerializer *serializer, QObject *parent = nullptr);
+  ReactionEngine(TransportManager *tm, MessageParser *parser, MessageSerializer *serializer, QObject *parent = nullptr);
 
   void loadFromFile(const QString &messagesJsonPath);
 

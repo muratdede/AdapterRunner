@@ -10,6 +10,7 @@ PeriodicSenderBehaviour::PeriodicSenderBehaviour(const QJsonObject &config, ISen
     , mSender(sender)
     , mSerializer(serializer)
     , mPeriodicTimer(nullptr)
+    , mMappings(FieldMapping::fromJsonArray(config["mappings"].toArray()))
 {
     int periodMs = config["period_ms"].toInt(100);
 
@@ -25,17 +26,13 @@ PeriodicSenderBehaviour::PeriodicSenderBehaviour(const QJsonObject &config, ISen
             srcObj["message"].toString(),
             srcObj["receiver"].toString(),
             srcObj["timeout_ms"].toInt(0),
+            srcObj["mappings"].toArray(),
             defaults,
             this
         );
 
         mTrackers.append(tracker);
         mTrackerByName.insert(srcObj["message"].toString(), tracker); // TODO check if works
-        mMappings.append(FieldMapping::fromJsonArray(srcObj["mappings"].toArray()));
-
-        qDebug() << "PeriodicSenderBehaviour: source[" << i << "]"
-                 << tracker->messageName() << "on" << tracker->receiverName()
-                 << "mappings:" << mMappings.last().size();
     }
 
     // Start periodic send timer
@@ -79,9 +76,8 @@ QMap<QString, QVariant> PeriodicSenderBehaviour::buildMergedValues()
     for (int i = 0; i < mTrackers.size(); ++i)
     {
         const auto& values = mTrackers[i]->currentValues();
-        const auto& mappings = mMappings[i];
+        const auto& mappings = mTrackers[i]->mappings();
 
-        // No mappings defined → direct pass-through by field name
         for (auto it = values.begin(); it != values.end(); ++it)
             merged.insert(it.key(), it.value());
 
