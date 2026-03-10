@@ -31,20 +31,24 @@ ParsedMessage MessageParser::parseFrame(const QByteArray& frame)
 
     QMap<QString, QVariant> parsedFields;
 
-    for (const FieldDef& field : msgDef->fields)
+    for (const auto& fieldPtr : msgDef->fields)
     {
-        int length = field.arrayLength;
-        if (!field.arrayLengthField.isEmpty())
-            length = parsedFields[field.arrayLengthField].toInt();
+        int length = fieldPtr->arrayLength;
+        if (!fieldPtr->arrayLengthField.isEmpty())
+            length = parsedFields[fieldPtr->arrayLengthField].toInt();
 
-        parsedFields[field.name] = Utils::readField(payload, field, msgDef->endian, length);
+        parsedFields[fieldPtr->name] = Utils::readField(payload, fieldPtr.get(), msgDef->endian, length, 0);
     }
 
     result.values = parsedFields;
 
     // Verify computed fields (e.g. checksum)
-    for (const FieldDef& field : msgDef->fields)
+    for (const auto& fieldPtr : msgDef->fields)
     {
+        if (fieldPtr->isMessage()) continue;
+        auto fieldObj = std::static_pointer_cast<FieldDef>(fieldPtr);
+        const FieldDef& field = *fieldObj;
+
         if (!field.compute.hasCompute())
             continue;
 
@@ -93,14 +97,14 @@ ParsedHeader MessageParser::parseHeader(const QByteArray &frame, const HeaderDef
 
     result.type = header.type;
 
-    for (const FieldDef& field : header.fields)
+    for (const auto& fieldPtr : header.fields)
     {
         // TODO: -> asagıdakiler
-        int length = field.arrayLength;
-        if (!field.arrayLengthField.isEmpty())
-            length = result.values[field.arrayLengthField].toInt();
+        int length = fieldPtr->arrayLength;
+        if (!fieldPtr->arrayLengthField.isEmpty())
+            length = result.values[fieldPtr->arrayLengthField].toInt();
 
-        result.values[field.name] = Utils::readField(frame, field, header.endian, length);
+        result.values[fieldPtr->name] = Utils::readField(frame, fieldPtr.get(), header.endian, length, 0);
     }
 
     return result;

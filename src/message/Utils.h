@@ -9,12 +9,12 @@
 
 class Utils {
 public:
-    static QVariant readField(const QByteArray& data, const FieldDef& field, QSysInfo::Endian msgEndian, int arrayLen = 0);
-    static void writeField(QByteArray& buffer, const FieldDef& field, const QVariant& value, QSysInfo::Endian endian);
+    static QVariant readField(const QByteArray& data, const AbstractField* field, QSysInfo::Endian msgEndian, int arrayLen = 0, int baseOffset = 0);
+    static void writeField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian endian, int baseOffset = 0);
 
 private:
-    static QVariant readSingleField(const QByteArray &data, const FieldDef &field, QSysInfo::Endian msgEndian);
-    static QVariant readArrayField(const QByteArray &data, const FieldDef &field, QSysInfo::Endian msgEndian, int length);
+    static QVariant readSingleField(const QByteArray &data, const AbstractField* field, QSysInfo::Endian msgEndian, int baseOffset);
+    static QVariant readArrayField(const QByteArray &data, const AbstractField* field, QSysInfo::Endian msgEndian, int length, int baseOffset);
 
     // TODO 4 bytelık chunk parcalama da eklenmeli
     static uint64_t extractBits(const QByteArray &data, int byteOffset, int bitOffset, int bitLength);
@@ -68,8 +68,8 @@ private:
 
     //----------------------------------------------------------//
 
-    static void writeSingleField(QByteArray& buffer, const FieldDef& field, const QVariant& value, QSysInfo::Endian endian);
-    static void writeArrayField(QByteArray& buffer, const FieldDef& field, const QVariant& value, QSysInfo::Endian endian);
+    static void writeSingleField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian endian, int baseOffset);
+    static void writeArrayField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian endian, int baseOffset);
 
     template<typename T>
     static void writeValue(QByteArray &buffer, int offset, T value, QSysInfo::Endian msgEndian)

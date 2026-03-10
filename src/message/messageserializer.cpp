@@ -13,32 +13,37 @@ QByteArray MessageSerializer::buildHeader(const HeaderDef &header, const QMap<QS
 {
     QByteArray headerData(header.headerSize, '\0');
 
-    for (const FieldDef& field : header.fields)
+    for (const auto& fieldPtr : header.fields)
     {
-        QSysInfo::Endian e = field.hasEndianOverride ? field.endian : header.endian;
+        QSysInfo::Endian e = fieldPtr->hasEndianOverride ? fieldPtr->endian : header.endian;
+        bool wroteCompute = false;
 
-        if (field.compute.hasCompute())
+        if (!fieldPtr->isMessage())
         {
-            // Skip frame-scope computes — they are deferred to buildFrame()
-            if (field.compute.scope == "frame")
-                continue;
+            auto field = std::static_pointer_cast<FieldDef>(fieldPtr);
+            if (field->compute.hasCompute())
+            {
+                if (field->compute.scope == "frame")
+                    continue;
 
-            const IChecksumAlgorithm* algo = ChecksumFactory::create(field.compute.algorithm);
-            if (algo)
-            {
-                uint8_t computedValue = algo->compute(headerData, field);
-                Utils::writeField(headerData, field, computedValue, header.endian);
-            }
-            else
-            {
-                qWarning() << "MessageSerializer: unknown compute algorithm:" << field.compute.algorithm
-                           << "for field" << field.name;
+                const IChecksumAlgorithm* algo = ChecksumFactory::create(field->compute.algorithm);
+                if (algo)
+                {
+                    uint8_t computedValue = algo->compute(headerData, *field);
+                    Utils::writeField(headerData, field.get(), computedValue, header.endian, 0);
+                }
+                else
+                {
+                    qWarning() << "Unsupported checksum algorithm:" << field->compute.algorithm;
+                }
+                wroteCompute = true;
             }
         }
-        else
+
+        if (!wroteCompute)
         {
-            QVariant value = values.value(field.name);
-            Utils::writeField(headerData, field, value, e);
+            QVariant value = values.value(fieldPtr->name);
+            Utils::writeField(headerData, fieldPtr.get(), value, e, 0);
         }
     }
 
@@ -49,17 +54,21 @@ QByteArray MessageSerializer::buildPayload(const MessageDef &msgDef, const QMap<
 {
     QByteArray payload;
 
-    for (const FieldDef& field : msgDef.fields)
+    for (const auto& fieldPtr : msgDef.fields)
     {
-        int needed = field.byteOffset + field.size;
+        int needed = fieldPtr->byteOffset + fieldPtr->getSize();
         if (payload.size() < needed)
             payload.resize(needed);
 
-        if (field.compute.hasCompute())
-            continue;
+        if (!fieldPtr->isMessage())
+        {
+            auto field = std::static_pointer_cast<FieldDef>(fieldPtr);
+            if (field->compute.hasCompute())
+                continue; // Compute fields are calculated at frame level
+        }
 
-        QVariant v = values.value(field.name);
-        Utils::writeField(payload, field, v, msgDef.endian);
+        QVariant v = values.value(fieldPtr->name);
+        Utils::writeField(payload, fieldPtr.get(), v, msgDef.endian, 0);
     }
 
     return payload;
@@ -90,65 +99,68 @@ QByteArray MessageSerializer::buildFrame(const QString &messageName, const QMap<
     QByteArray frame = headerData + payload;
 
     // compute header fields
-    for (const FieldDef& field : header->fields)
+    for (const auto& fieldPtr : header->fields)
     {
-        FieldDef tmp = field;
+        if (fieldPtr->isMessage()) continue;
+        auto field = std::static_pointer_cast<FieldDef>(fieldPtr);
 
-        if (!field.compute.hasCompute())
+        if (!field->compute.hasCompute())
             continue;
 
-        const IChecksumAlgorithm* algo = ChecksumFactory::create(field.compute.algorithm);
+        const IChecksumAlgorithm* algo = ChecksumFactory::create(field->compute.algorithm);
         if (!algo) continue;
 
-        // Build the buffer based on scope
         QByteArray computeBuffer;
-        if (field.compute.scope == "frame")
+        FieldDef tmp = *field;
+
+        if (field->compute.scope == "frame")
         {
             computeBuffer = frame;
-            tmp.byteOffset = header->headerSize + field.byteOffset;
         }
-        else if (field.compute.scope == "header")
+        else if (field->compute.scope == "header")
+        {
+            computeBuffer = headerData;
+        }
+        else  // "payload"
         {
             computeBuffer = payload;
         }
-        else  // "payload" (default)
-        {
-            computeBuffer = payload;
-        }
-        QVariant computedValue = algo->compute(computeBuffer, tmp);
 
-        Utils::writeField(frame, tmp, computedValue, header->endian);
+        uint8_t computedValue = algo->compute(computeBuffer, tmp);
+        Utils::writeField(frame, field.get(), computedValue, header->endian, 0);
     }
 
     // compute payload fields
-    for (const FieldDef& field : msgDef->fields)
+    for (const auto& fieldPtr : msgDef->fields)
     {
-        FieldDef tmp = field;
+        if (fieldPtr->isMessage()) continue;
+        auto field = std::static_pointer_cast<FieldDef>(fieldPtr);
 
-        if (!field.compute.hasCompute())
+        if (!field->compute.hasCompute())
             continue;
 
-        const IChecksumAlgorithm* algo = ChecksumFactory::create(field.compute.algorithm);
+        const IChecksumAlgorithm* algo = ChecksumFactory::create(field->compute.algorithm);
         if (!algo) continue;
 
-        // Build the buffer based on scope
         QByteArray computeBuffer;
-        if (field.compute.scope == "frame")
+        FieldDef tmp = *field;
+
+        if (field->compute.scope == "frame")
         {
             computeBuffer = frame;
-            tmp.byteOffset = header->headerSize + field.byteOffset;
+            tmp.byteOffset = header->headerSize + field->byteOffset;
         }
-        else if (field.compute.scope == "header")
+        else if (field->compute.scope == "header")
+        {
+            computeBuffer = headerData;
+        }
+        else  // "payload"
         {
             computeBuffer = payload;
         }
-        else  // "payload" (default)
-        {
-            computeBuffer = payload;
-        }
-        QVariant computedValue = algo->compute(computeBuffer, tmp);
 
-        Utils::writeField(frame, tmp, computedValue, header->endian);
+        uint32_t computedValue = algo->compute(computeBuffer, tmp);
+        Utils::writeField(frame, field.get(), computedValue, msgDef->endian, header->headerSize);
     }
 
     return frame;
