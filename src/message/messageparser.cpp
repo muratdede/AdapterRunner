@@ -85,9 +85,34 @@ ParsedMessage MessageParser::parseFrame(const QByteArray& frame)
 
         uint8_t received = static_cast<uint8_t>(parsedFields[field.name].toUInt());
 
-        if (!algo->verify(payload, field.byteOffset, field.size, received))
+        // Build the buffer based on scope
+        QByteArray computeBuffer;
+        int fieldAbsoluteOffset;
+
+        if (field.compute.scope == "frame")
         {
-            uint8_t expected = algo->compute(payload, field.byteOffset, field.size);
+            computeBuffer = frame;
+            fieldAbsoluteOffset = header->headerSize + field.byteOffset;
+        }
+        else if (field.compute.scope == "header")
+        {
+            computeBuffer = frame.left(header->headerSize);
+            fieldAbsoluteOffset = field.byteOffset;
+        }
+        else  // "payload" (default)
+        {
+            computeBuffer = payload;
+            fieldAbsoluteOffset = field.byteOffset;
+        }
+
+        int rangeStart = field.compute.rangeStart;
+        int rangeEnd = field.compute.rangeEnd;
+        int exclOffset = field.compute.excludeSelf ? fieldAbsoluteOffset : -1;
+        int exclSize = field.compute.excludeSelf ? field.size : 0;
+
+        if (!algo->verify(computeBuffer, rangeStart, rangeEnd, exclOffset, exclSize, received))
+        {
+            uint8_t expected = algo->compute(computeBuffer, rangeStart, rangeEnd, exclOffset, exclSize);
             qWarning() << "MessageParser: checksum mismatch for" << result.name
                        << "- expected:" << expected << "received:" << received;
 

@@ -216,6 +216,14 @@ FieldDef ProtocolSchema::parseField(const QJsonObject& f)
         auto cObj = f["compute"].toObject();
         field.compute.algorithm = cObj["algorithm"].toString();
         field.compute.onMismatch = cObj["onMismatch"].toString();
+        field.compute.scope = cObj.contains("scope") ? cObj["scope"].toString() : "payload";
+        field.compute.excludeSelf = cObj.contains("exclude_self") ? cObj["exclude_self"].toBool() : true;
+        if (cObj.contains("range"))
+        {
+            auto rangeObj = cObj["range"].toObject();
+            field.compute.rangeStart = rangeObj.contains("start") ? rangeObj["start"].toInt() : 0;
+            field.compute.rangeEnd = rangeObj.contains("end") ? rangeObj["end"].toInt() : -1;
+        }
     }
 
     return field;

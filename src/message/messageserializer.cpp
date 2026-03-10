@@ -35,27 +35,51 @@ QByteArray MessageSerializer::buildHeader(const HeaderDef &header, int msgId, in
     // Write start bytes
     memcpy(headerData.data(), header.startBytes.constData(), header.startBytes.size());
 
-    // Write header fields
     for (const FieldDef& field : header.fields)
     {
-        QSysInfo::Endian e = field.hasEndianOverride ? field.endian : header.endian;
-
-        if (field.name == "msg_id")
+        if (field.compute.hasCompute())
         {
-            switch (field.size)
+            // Skip frame-scope computes — they are deferred to buildFrame()
+            if (field.compute.scope == "frame")
+                continue;
+
+            // Header-scope computes can be done now
+            const IChecksumAlgorithm* algo = ChecksumFactory::create(field.compute.algorithm);
+            if (algo)
             {
-            case 1: writeValue<uint8_t>(headerData, field.byteOffset, msgId, e); break;
-            case 2: writeValue<uint16_t>(headerData, field.byteOffset, msgId, e); break;
-            case 4: writeValue<uint32_t>(headerData, field.byteOffset, msgId, e); break;
+                int exclOffset = field.compute.excludeSelf ? field.byteOffset : -1;
+                int exclSize = field.compute.excludeSelf ? field.size : 0;
+                uint8_t checksum = algo->compute(headerData, field.compute.rangeStart, field.compute.rangeEnd, exclOffset, exclSize);
+                writeSingleField(headerData, field, checksum, header.endian);
+            }
+            else
+            {
+                qWarning() << "MessageSerializer: unknown compute algorithm:" << field.compute.algorithm
+                           << "for field" << field.name;
             }
         }
-        else if (field.name == "length")
+        else
         {
-            switch (field.size)
+            QSysInfo::Endian e = field.hasEndianOverride ? field.endian : header.endian;
+
+            // TODO: hardcoded fields, make compute instead of this
+            if (field.name == "msg_id")
             {
-            case 1: writeValue<uint8_t>(headerData, field.byteOffset, payloadLength, e); break;
-            case 2: writeValue<uint16_t>(headerData, field.byteOffset, payloadLength, e); break;
-            case 4: writeValue<uint32_t>(headerData, field.byteOffset, payloadLength, e); break;
+                switch (field.size)
+                {
+                case 1: writeValue<uint8_t>(headerData, field.byteOffset, msgId, e); break;
+                case 2: writeValue<uint16_t>(headerData, field.byteOffset, msgId, e); break;
+                case 4: writeValue<uint32_t>(headerData, field.byteOffset, msgId, e); break;
+                }
+            }
+            else if (field.name == "length")
+            {
+                switch (field.size)
+                {
+                case 1: writeValue<uint8_t>(headerData, field.byteOffset, payloadLength, e); break;
+                case 2: writeValue<uint16_t>(headerData, field.byteOffset, payloadLength, e); break;
+                case 4: writeValue<uint32_t>(headerData, field.byteOffset, payloadLength, e); break;
+                }
             }
         }
     }
@@ -139,58 +163,106 @@ QByteArray MessageSerializer::buildFrame(const QString &messageName, const QMap<
         return {};
     }
 
-    // Build payload
+    // Step 1: Build payload (skip frame-scope computes)
     QByteArray payload;
-
     for (const FieldDef& field : msgDef->fields)
     {
-        // Skip computed fields — they are filled after all regular fields
-        if (field.compute.hasCompute())
-            continue;
-
-        QVariant v = values.value(field.name);
-
-        int arrayLen = field.arrayLength;
-
-        if (!field.arrayLengthField.isEmpty())
-            arrayLen = values.value(field.arrayLengthField).toInt();
-
-        if (arrayLen > 0)
-        {
-            writeArrayField(payload, field, v, msgDef->endian);
-        }
-        else
-        {
-            writeSingleField(payload, field, v, msgDef->endian);
-        }
-    }
-
-    // Handle computed fields (e.g. checksums)
-    for (const FieldDef& field : msgDef->fields)
-    {
-        if (!field.compute.hasCompute())
-            continue;
-
-        // Ensure buffer is large enough for the computed field
         int needed = field.byteOffset + field.size;
         if (payload.size() < needed)
             payload.resize(needed);
 
-        const IChecksumAlgorithm* algo = ChecksumFactory::create(field.compute.algorithm);
-        if (algo)
+        if (field.compute.hasCompute())
         {
-            uint8_t checksum = algo->compute(payload, field.byteOffset, field.size);
-            writeValue<uint8_t>(payload, field.byteOffset, checksum, msgDef->endian);
+            // Skip frame-scope computes — they need the full frame
+            if (field.compute.scope == "frame")
+                continue;
+
+            // Payload-scope computes can be done now
+            const IChecksumAlgorithm* algo = ChecksumFactory::create(field.compute.algorithm);
+            if (algo)
+            {
+                int exclOffset = field.compute.excludeSelf ? field.byteOffset : -1;
+                int exclSize = field.compute.excludeSelf ? field.size : 0;
+                uint8_t checksum = algo->compute(payload, field.compute.rangeStart, field.compute.rangeEnd, exclOffset, exclSize);
+                writeSingleField(payload, field, checksum, msgDef->endian);
+            }
+            else
+            {
+                qWarning() << "MessageSerializer: unknown compute algorithm:" << field.compute.algorithm
+                           << "for field" << field.name;
+            }
         }
         else
         {
-            qWarning() << "MessageSerializer: unknown compute algorithm:" << field.compute.algorithm
-                       << "for field" << field.name;
+            QVariant v = values.value(field.name);
+
+            int arrayLen = field.arrayLength;
+
+            if (!field.arrayLengthField.isEmpty())
+                arrayLen = values.value(field.arrayLengthField).toInt();
+
+            if (arrayLen > 0)
+            {
+                writeArrayField(payload, field, v, msgDef->endian);
+            }
+            else
+            {
+                writeSingleField(payload, field, v, msgDef->endian);
+            }
         }
     }
 
-    // Build header with msg_id and payload length
+    // Step 2: Build header (frame-scope header computes are also deferred)
     QByteArray headerData = buildHeader(*header, msgDef->messageId, payload.size());
 
-    return headerData + payload;
+    // Step 3: Assemble frame
+    QByteArray frame = headerData + payload;
+
+    // Step 4: Apply frame-scope computes on the full frame
+    // Check header fields for frame-scope computes
+    for (const FieldDef& field : header->fields)
+    {
+        if (!field.compute.hasCompute() || field.compute.scope != "frame")
+            continue;
+
+        const IChecksumAlgorithm* algo = ChecksumFactory::create(field.compute.algorithm);
+        if (!algo) continue;
+
+        int exclOffset = field.compute.excludeSelf ? field.byteOffset : -1;
+        int exclSize = field.compute.excludeSelf ? field.size : 0;
+        uint8_t checksum = algo->compute(frame, field.compute.rangeStart, field.compute.rangeEnd, exclOffset, exclSize);
+
+        // Write directly into frame at header position
+        QSysInfo::Endian e = field.hasEndianOverride ? field.endian : header->endian;
+        switch (field.size)
+        {
+        case 1: writeValue<uint8_t>(frame, field.byteOffset, checksum, e); break;
+        case 2: writeValue<uint16_t>(frame, field.byteOffset, checksum, e); break;
+        }
+    }
+
+    // Check payload fields for frame-scope computes
+    for (const FieldDef& field : msgDef->fields)
+    {
+        if (!field.compute.hasCompute() || field.compute.scope != "frame")
+            continue;
+
+        const IChecksumAlgorithm* algo = ChecksumFactory::create(field.compute.algorithm);
+        if (!algo) continue;
+
+        int fieldAbsoluteOffset = header->headerSize + field.byteOffset;
+        int exclOffset = field.compute.excludeSelf ? fieldAbsoluteOffset : -1;
+        int exclSize = field.compute.excludeSelf ? field.size : 0;
+        uint8_t checksum = algo->compute(frame, field.compute.rangeStart, field.compute.rangeEnd, exclOffset, exclSize);
+
+        // Write directly into frame at payload position
+        QSysInfo::Endian e = field.hasEndianOverride ? field.endian : msgDef->endian;
+        switch (field.size)
+        {
+        case 1: writeValue<uint8_t>(frame, fieldAbsoluteOffset, checksum, e); break;
+        case 2: writeValue<uint16_t>(frame, fieldAbsoluteOffset, checksum, e); break;
+        }
+    }
+
+    return frame;
 }

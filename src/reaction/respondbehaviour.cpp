@@ -21,6 +21,7 @@ RespondBehaviour::RespondBehaviour(const QJsonObject &config, ISender *sender, M
         mWatchdog = new QTimer(this);
         mWatchdog->setSingleShot(true);
         mWatchdog->setInterval(mPeriodMs);
+        mWatchdog->setTimerType(Qt::PreciseTimer);
         connect(mWatchdog, &QTimer::timeout, this, &RespondBehaviour::onWatchdogTimeout);
         mWatchdog->start();
     }

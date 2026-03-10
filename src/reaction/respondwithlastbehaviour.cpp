@@ -32,6 +32,7 @@ RespondWithLastBehaviour::RespondWithLastBehaviour(const QJsonObject &config, IS
         mWatchdog = new QTimer(this);
         mWatchdog->setSingleShot(true);
         mWatchdog->setInterval(mPeriodMs);
+        mWatchdog->setTimerType(Qt::PreciseTimer);
         connect(mWatchdog, &QTimer::timeout, this, &RespondWithLastBehaviour::onWatchdogTimeout);
         mWatchdog->start();
     }

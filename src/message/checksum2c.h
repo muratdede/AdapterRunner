@@ -6,14 +6,16 @@
 class Checksum2C : public IChecksumAlgorithm
 {
 public:
-    uint8_t compute(const QByteArray& payload, int excludeOffset, int excludeSize) const override
+    uint8_t compute(const QByteArray& data, int rangeStart, int rangeEnd,
+                    int excludeOffset, int excludeSize) const override
     {
+        int end = (rangeEnd < 0) ? data.size() : rangeEnd;
         uint8_t sum = 0;
-        for (int i = 0; i < payload.size(); ++i)
+        for (int i = rangeStart; i < end; ++i)
         {
-            if (i >= excludeOffset && i < excludeOffset + excludeSize)
+            if (excludeOffset >= 0 && i >= excludeOffset && i < excludeOffset + excludeSize)
                 continue;
-            sum += static_cast<uint8_t>(payload[i]);
+            sum += static_cast<uint8_t>(data[i]);
         }
         return static_cast<uint8_t>(~sum + 1);
     }

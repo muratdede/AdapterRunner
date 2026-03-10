@@ -10,6 +10,7 @@
 
 // TODO: reactionları runtimeda sürekli if name equals ile kıyaslamak yerine gerekli sender ve reaction handlerların
 //   connectionlarıyla bu iş çözülebilir
+// TODO: header tiplerini start bytelara göre eşleştiriyorum, gerek bile olmayabilir.
 #include "src/reaction/reactionengine.h"
 
 int main(int argc, char *argv[])
@@ -18,18 +19,18 @@ int main(int argc, char *argv[])
 
     // Load transports (receivers + senders)
     TransportManager tm;
-    tm.load("../exampleConfigs/transports.json");
+    tm.load("../exampleConfigs/akkor_transports.json");
 
     // Load protocol schema
     ProtocolSchema schema;
-    schema.load("../exampleConfigs/messages.json");
+    schema.load("../exampleConfigs/akkor_messages.json");
 
     MessageParser parser(&schema);
     MessageSerializer serializer(&schema);
 
     // Load and start reaction engine
     ReactionEngine engine(&tm, &parser, &serializer);
-    engine.loadFromFile("../exampleConfigs/messages.json");
+    engine.loadFromFile("../exampleConfigs/akkor_messages.json");
 
     // Debug: log all received messages on all receivers
     auto& receivers = tm.receivers();

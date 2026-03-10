@@ -41,6 +41,7 @@ PeriodicSenderBehaviour::PeriodicSenderBehaviour(const QJsonObject &config, ISen
     // Start periodic send timer
     mPeriodicTimer = new QTimer(this);
     mPeriodicTimer->setInterval(periodMs);
+    mPeriodicTimer->setTimerType(Qt::PreciseTimer);
     connect(mPeriodicTimer, &QTimer::timeout, this, &PeriodicSenderBehaviour::onTimerTick);
     mPeriodicTimer->start();
 
