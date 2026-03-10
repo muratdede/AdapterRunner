@@ -11,8 +11,8 @@ public:
     {
         int rangeStart = field.compute.rangeStart;
         int rangeEnd = field.compute.rangeEnd;
-        int excludeOffset = field.compute.excludeSelf ? field.byteOffset : -1;
-        int excludeSize = field.compute.excludeSelf ? field.size : 0;
+        int excludeOffset = field.byteOffset;
+        int excludeSize = field.size;
 
         int end = (rangeEnd < 0) ? data.size() : rangeEnd;
         uint8_t sum = 0;

@@ -20,7 +20,6 @@ struct ComputeDef
     QString scope;        // "payload" (default), "header", "frame"
     int rangeStart = 0;   // byte offset within scope
     int rangeEnd = -1;    // -1 = end of scope
-    bool excludeSelf = true;
 
     bool hasCompute() const { return !algorithm.isEmpty(); }
 };
