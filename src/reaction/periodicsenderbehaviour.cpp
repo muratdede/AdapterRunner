@@ -71,6 +71,7 @@ void PeriodicSenderBehaviour::onTimerTick()
         mSender->send(frame);
 }
 
+// TODO smells
 QMap<QString, QVariant> PeriodicSenderBehaviour::buildMergedValues()
 {
     QMap<QString, QVariant> merged;

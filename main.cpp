@@ -11,6 +11,7 @@
 // TODO: reactionları runtimeda sürekli if name equals ile kıyaslamak yerine gerekli sender ve reaction handlerların
 //   connectionlarıyla bu iş çözülebilir
 // TODO: header tiplerini start bytelara göre eşleştiriyorum, gerek bile olmayabilir.
+// TODO: header da aslında bi message, concat mesajlar eklenince header diye ayrı belirtme ihtiyacı olmayacak
 #include "src/reaction/reactionengine.h"
 
 int main(int argc, char *argv[])
