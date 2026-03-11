@@ -10,8 +10,6 @@
 
 // TODO: reactionları runtimeda sürekli if name equals ile kıyaslamak yerine gerekli sender ve reaction handlerların
 //   connectionlarıyla bu iş çözülebilir
-// TODO: header tiplerini start bytelara göre eşleştiriyorum, gerek bile olmayabilir.
-// TODO: header da aslında bi message, concat mesajlar eklenince header diye ayrı belirtme ihtiyacı olmayacak
 #include "src/reaction/reactionengine.h"
 
 int main(int argc, char *argv[])
@@ -24,14 +22,14 @@ int main(int argc, char *argv[])
 
     // Load protocol schema
     ProtocolSchema schema;
-    schema.load("../exampleConfigs/akkor_messages.json");
+    schema.load("../exampleConfigs/akkor_messages_2.json");
 
     MessageParser parser(&schema);
     MessageSerializer serializer(&schema);
 
     // Load and start reaction engine
     ReactionEngine engine(&tm, &parser, &serializer);
-    engine.loadFromFile("../exampleConfigs/akkor_messages.json");
+    engine.loadFromFile("../exampleConfigs/akkor_messages_2.json");
 
     // Debug: log all received messages on all receivers
     auto& receivers = tm.receivers();

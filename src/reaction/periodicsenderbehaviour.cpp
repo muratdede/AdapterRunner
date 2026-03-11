@@ -32,7 +32,7 @@ PeriodicSenderBehaviour::PeriodicSenderBehaviour(const QJsonObject &config, ISen
         );
 
         mTrackers.append(tracker);
-        mTrackerByName.insert(srcObj["message"].toString(), tracker); // TODO check if works
+        mTrackerByName.insert(srcObj["message"].toString(), tracker);
     }
 
     // Start periodic send timer
@@ -111,6 +111,39 @@ QMap<QString, QVariant> PeriodicSenderBehaviour::buildMergedValues()
                 QVariant result = mEvaluator.evaluate(mapping.expression);
                 merged.insert(mapping.targetField, result);
             }
+        }
+    }
+
+    // TODO Duplicate code
+    if (!mMappings.isEmpty())
+    {
+        // Apply expression-based mappings
+        mEvaluator.setVariables(merged);
+
+        for (const FieldMapping& mapping : mMappings)
+        {
+            // Load dependent source variables into JS scope
+            for (const QString& dep : mapping.dependents)
+            {
+                int dotIdx = dep.indexOf('.');
+                QString msgName = (dotIdx > 0) ? dep.left(dotIdx) : dep;
+                QString fieldName = (dotIdx > 0) ? dep.mid(dotIdx + 1) : QString();
+
+                SourceTracker* depTracker = mTrackerByName.value(msgName, nullptr);
+                if (!depTracker) continue;
+
+                if (fieldName.isEmpty())
+                    mEvaluator.setVariables(depTracker->currentValues());
+                else
+                {
+                    const auto& vals = depTracker->currentValues();
+                    if (vals.contains(fieldName))
+                        mEvaluator.setVariable(fieldName, vals[fieldName]);
+                }
+            }
+
+            QVariant result = mEvaluator.evaluate(mapping.expression);
+            merged.insert(mapping.targetField, result);
         }
     }
 

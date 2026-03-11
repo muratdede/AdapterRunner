@@ -12,11 +12,50 @@ public:
     static QVariant readField(const QByteArray& data, const AbstractField* field, QSysInfo::Endian parentEndian, int arrayLen = 0, int baseOffset = 0);
     static void writeField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian endian, int baseOffset = 0);
 
+    template<typename T>
+    static QVariant toQVariant(const FieldDef& field, T value)
+    {
+        switch (field.type)
+        {
+        case FieldType::UINT:
+        {
+            if (field.size == 1)
+                return static_cast<uint8_t>(value);
+            if (field.size == 2)
+                return static_cast<uint16_t>(value);
+            if (field.size == 4)
+                return static_cast<uint32_t>(value);
+            if (field.size == 8)
+                return static_cast<uint64_t>(value);
+        }
+        break;
+
+        case FieldType::INT:
+        {
+            if (field.size == 1)
+                return static_cast<int8_t>(value);
+            if (field.size == 2)
+                return static_cast<int16_t>(value);
+            if (field.size == 4)
+                return static_cast<int32_t>(value);
+            if (field.size == 8)
+                return static_cast<int64_t>(value);
+        }
+        break;
+
+        case FieldType::FLOAT:
+            return static_cast<float>(value);
+        case FieldType::DOUBLE:
+            return static_cast<double>(value);
+        case FieldType::BOOL:
+            return bool(static_cast<uint8_t>(value));
+        }
+    }
+
 private:
     static QVariant readArrayField(const QByteArray &data, const AbstractField* field, QSysInfo::Endian parentEndian, int length, int baseOffset);
     static QVariant readSingleField(const QByteArray &data, const AbstractField* field, QSysInfo::Endian parentEndian, int baseOffset);
 
-    // TODO 4 bytelık chunk parcalama da eklenmeli
     static uint64_t extractBits(const QByteArray &data, int byteOffset, int bitOffset, int bitLength);
 
     template<typename T>

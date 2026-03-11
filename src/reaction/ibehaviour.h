@@ -14,9 +14,7 @@ public:
     virtual ~IBehaviour() = default;
 
     /// Called by ReactionEngine when a message is received on any connected receiver
-    virtual void onMessageReceived(const QString& receiverName,
-                                   const QString& messageName,
-                                   const QMap<QString, QVariant>& values) = 0;
+    virtual void onMessageReceived(const QString& receiverName, const QString& messageName, const QMap<QString, QVariant>& values) = 0;
 
     /// Returns all receiver names this behaviour needs to be connected to
     virtual QStringList requiredReceivers() const = 0;

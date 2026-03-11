@@ -2,6 +2,7 @@
 #define ICHECKSUMNALGORITHM_H
 
 #include <QByteArray>
+#include <QVariant>
 
 #include "src/message/defs.h"
 
@@ -10,14 +11,11 @@ class IChecksumAlgorithm
 public:
     virtual ~IChecksumAlgorithm() = default;
 
-    /// Compute over data[rangeStart..rangeEnd), optionally excluding [excludeOffset, excludeOffset+excludeSize)
-    /// rangeEnd = -1 means end of data
-    virtual uint8_t compute(const QByteArray& data, const FieldDef& field) const = 0;
+    virtual QVariant compute(const QByteArray& data, int offset, const FieldDef& field) const = 0;
 
-    /// Verify the checksum: returns true if the received value matches the expected
-    bool verify(const QByteArray& data, const FieldDef& field, uint8_t received) const
+    bool verify(const QByteArray& data, int offset, const FieldDef& field, QVariant received) const
     {
-        return compute(data, field) == received;
+        return compute(data, offset, field) == received;
     }
 };
 

@@ -19,9 +19,10 @@ RespondWithLastBehaviour::RespondWithLastBehaviour(const QJsonObject &config, IS
     // Create source tracker
     auto defaults = JsonUtils::parseValues(config["default_values"].toObject());
     mSourceTracker = new SourceTracker(
-        config["source_message"].toString(),
-        config["source_receiver"].toString(),
-        config["source_timeout_ms"].toInt(0),
+        config["message"].toString(),
+        config["receiver"].toString(),
+        config["timeout_ms"].toInt(0),
+        config["mappings"].toArray(),
         defaults,
         this
     );

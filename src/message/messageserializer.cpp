@@ -7,50 +7,10 @@
 MessageSerializer::MessageSerializer(const ProtocolSchema *schema)
     : mSchema(schema)
 {
+
 }
 
-QByteArray MessageSerializer::buildHeader(const HeaderDef &header, const QMap<QString, QVariant> &values)
-{
-    QByteArray headerData(header.headerSize, '\0');
-
-    for (const auto& fieldPtr : header.fields)
-    {
-        QSysInfo::Endian e = fieldPtr->hasEndianOverride ? fieldPtr->endian : header.endian;
-        bool wroteCompute = false;
-
-        if (!fieldPtr->isMessage())
-        {
-            auto field = std::static_pointer_cast<FieldDef>(fieldPtr);
-            if (field->compute.hasCompute())
-            {
-                if (field->compute.scope == "frame")
-                    continue;
-
-                const IChecksumAlgorithm* algo = ChecksumFactory::create(field->compute.algorithm);
-                if (algo)
-                {
-                    uint8_t computedValue = algo->compute(headerData, *field);
-                    Utils::writeField(headerData, field.get(), computedValue, header.endian, 0);
-                }
-                else
-                {
-                    qWarning() << "Unsupported checksum algorithm:" << field->compute.algorithm;
-                }
-                wroteCompute = true;
-            }
-        }
-
-        if (!wroteCompute)
-        {
-            QVariant value = values.value(fieldPtr->name);
-            Utils::writeField(headerData, fieldPtr.get(), value, e, 0);
-        }
-    }
-
-    return headerData;
-}
-
-QByteArray MessageSerializer::buildPayload(const MessageDef &msgDef, const QMap<QString, QVariant> &values)
+QByteArray MessageSerializer::buildPayload(const AbstractMessage &msgDef, const QMap<QString, QVariant> &values)
 {
     QByteArray payload;
 
@@ -60,24 +20,38 @@ QByteArray MessageSerializer::buildPayload(const MessageDef &msgDef, const QMap<
         if (payload.size() < needed)
             payload.resize(needed);
 
+        QSysInfo::Endian endian = fieldPtr->hasEndianOverride ? fieldPtr->endian : msgDef.endian;
+
         if (!fieldPtr->isMessage())
         {
             auto field = std::static_pointer_cast<FieldDef>(fieldPtr);
             if (field->compute.hasCompute())
-                continue; // Compute fields are calculated at frame level
+            {
+                const IChecksumAlgorithm* algo = ChecksumFactory::create(field->compute.algorithm);
+                if (algo)
+                {
+                    QVariant computedValue = algo->compute(payload, 0, *field);
+                    Utils::writeField(payload, field.get(), computedValue, endian, 0);
+                }
+                else
+                {
+                    qWarning() << "Unsupported checksum algorithm:" << field->compute.algorithm;
+                }
+
+                continue;
+            }
         }
 
-        QVariant v = values.value(fieldPtr->name);
-        Utils::writeField(payload, fieldPtr.get(), v, msgDef.endian, 0);
+        QVariant value = values.value(fieldPtr->name);
+        Utils::writeField(payload, fieldPtr.get(), value, endian, 0);
     }
 
     return payload;
 }
 
-
 QByteArray MessageSerializer::buildFrame(const QString &messageName, const QMap<QString, QVariant> &values)
 {
-    const MessageDef* msgDef = mSchema->getMessageByName(messageName);
+    auto msgDef = mSchema->getMessageByName(messageName);
 
     if (!msgDef)
     {
@@ -85,55 +59,13 @@ QByteArray MessageSerializer::buildFrame(const QString &messageName, const QMap<
         return {};
     }
 
-    const HeaderDef* header = mSchema->getHeader(msgDef->headerType);
-
-    if (!header)
-    {
-        qWarning() << "MessageSerializer::buildFrame: unknown header type" << msgDef->headerType;
-        return {};
-    }
-
     QByteArray payload = buildPayload(*msgDef, values);
-    QByteArray headerData = buildHeader(*header, values);
 
-    QByteArray frame = headerData + payload;
-
-    // compute header fields
-    for (const auto& fieldPtr : header->fields)
-    {
-        if (fieldPtr->isMessage()) continue;
-        auto field = std::static_pointer_cast<FieldDef>(fieldPtr);
-
-        if (!field->compute.hasCompute())
-            continue;
-
-        const IChecksumAlgorithm* algo = ChecksumFactory::create(field->compute.algorithm);
-        if (!algo) continue;
-
-        QByteArray computeBuffer;
-        FieldDef tmp = *field;
-
-        if (field->compute.scope == "frame")
-        {
-            computeBuffer = frame;
-        }
-        else if (field->compute.scope == "header")
-        {
-            computeBuffer = headerData;
-        }
-        else  // "payload"
-        {
-            computeBuffer = payload;
-        }
-
-        uint8_t computedValue = algo->compute(computeBuffer, tmp);
-        Utils::writeField(frame, field.get(), computedValue, header->endian, 0);
-    }
-
-    // compute payload fields
     for (const auto& fieldPtr : msgDef->fields)
     {
-        if (fieldPtr->isMessage()) continue;
+        if (fieldPtr->isMessage())
+            continue;
+
         auto field = std::static_pointer_cast<FieldDef>(fieldPtr);
 
         if (!field->compute.hasCompute())
@@ -142,26 +74,11 @@ QByteArray MessageSerializer::buildFrame(const QString &messageName, const QMap<
         const IChecksumAlgorithm* algo = ChecksumFactory::create(field->compute.algorithm);
         if (!algo) continue;
 
-        QByteArray computeBuffer;
         FieldDef tmp = *field;
 
-        if (field->compute.scope == "frame")
-        {
-            computeBuffer = frame;
-            tmp.byteOffset = header->headerSize + field->byteOffset;
-        }
-        else if (field->compute.scope == "header")
-        {
-            computeBuffer = headerData;
-        }
-        else  // "payload"
-        {
-            computeBuffer = payload;
-        }
-
-        uint32_t computedValue = algo->compute(computeBuffer, tmp);
-        Utils::writeField(frame, field.get(), computedValue, msgDef->endian, header->headerSize);
+        QVariant computedValue = algo->compute(payload, 0, tmp);
+        Utils::writeField(payload, field.get(), computedValue, msgDef->endian, 0);
     }
 
-    return frame;
+    return payload;
 }

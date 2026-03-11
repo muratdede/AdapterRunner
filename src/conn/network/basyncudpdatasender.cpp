@@ -8,8 +8,8 @@ BAsyncUDPDataSender::BAsyncUDPDataSender(const QHostAddress &pDestinationHost, u
     : ISender()
     , mSocket(nullptr)
     , mDestinationHost(pDestinationHost)
-    , mDestinationPort(pDestinationPort)
     , mEthernetInterfaceAddress(pEthernetInterfaceAddress)
+    , mDestinationPort(pDestinationPort)
     , mSourcePort(pSourcePort)
 {
 
@@ -22,7 +22,7 @@ BAsyncUDPDataSender::~BAsyncUDPDataSender()
 
 void BAsyncUDPDataSender::mainLoop()
 {
-    //TODO :  if you send multicast set mHost("224.0.0.2") or releated ip
+    //if you send multicast set mHost("224.0.0.2") or releated ip
     mSocket = new QUdpSocket;
     connect(mSocket, qOverload<QAbstractSocket::SocketError>(&QAbstractSocket::error), this, &BAsyncUDPDataSender::errorOccurred);
     mSocket->open(QIODevice::WriteOnly);

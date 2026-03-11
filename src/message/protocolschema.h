@@ -13,15 +13,15 @@ public:
 
     bool load(const QString &path);
 
-    const HeaderDef* findHeader(const QByteArray& data) const;
-    const MessageDef* getMessage(const QString& headerType, int msgId) const;
+    std::shared_ptr<HeaderDef> findHeader(const QByteArray& data) const;
+    std::shared_ptr<HeaderDef> getHeader(const QString& name) const;
 
-    const MessageDef* getMessageByName(const QString& name) const;
-    const HeaderDef* getHeader(const QString& type) const;
-
-    bool matchesHeader(const QByteArray& data, const HeaderDef& header) const;
+    std::shared_ptr<MessageDef> getMessageById(int msgId) const;
+    std::shared_ptr<MessageDef> getMessageByName(const QString& name) const;
 
 private:
+    bool matchesHeader(const QByteArray& data, std::shared_ptr<HeaderDef> header) const;
+
     QSysInfo::Endian parseEndianness(const QString& str);
     FieldType parseFieldType(const QString& type);
     int parseTypeSize(const QString& type);
@@ -29,11 +29,11 @@ private:
     // Parses a basic primitive field, or creates a placeholder MessageDef for nested types
     std::shared_ptr<AbstractField> parseField(const QJsonObject& f, QSysInfo::Endian defaultEndian);
 
-    // Resolves all composite fields (MessageDefs used as fields) using initialized templates
-    void resolveCompositeFields();
+    void resolveCompositeFields(std::shared_ptr<MessageDef> message);
 
-    QHash<QString, HeaderDef> mHeaders;
-    QHash<QString, QHash<int, std::shared_ptr<MessageDef>>> mMessages;
+    QHash<QString, std::shared_ptr<HeaderDef>> mHeaders;
+    QHash<QString, std::shared_ptr<AbstractMessage>> mTypesByName;
+    QHash<int, std::shared_ptr<MessageDef>> mMessagesById;
     QHash<QString, std::shared_ptr<MessageDef>> mMessagesByName;
 };
 

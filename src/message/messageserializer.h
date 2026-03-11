@@ -14,9 +14,7 @@ public:
     QByteArray buildFrame(const QString& messageName, const QMap<QString, QVariant>& values);
 
 private:
-    QByteArray buildHeader(const HeaderDef& header, const QMap<QString, QVariant> &values);
-    QByteArray buildPayload(const MessageDef& msgDef, const QMap<QString, QVariant> &values);
-
+    QByteArray buildPayload(const AbstractMessage &msgDef, const QMap<QString, QVariant> &values);
 
     const ProtocolSchema* mSchema;
 };

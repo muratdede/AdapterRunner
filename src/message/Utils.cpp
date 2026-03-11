@@ -1,20 +1,22 @@
 #include "Utils.h"
+#include "checksumfactory.h"
 
+#include <QDebug>
 
 QVariant Utils::readField(const QByteArray &data, const AbstractField *field, QSysInfo::Endian parentEndian, int arrayLen, int baseOffset)
 {
-    QVariant v;
+    QVariant value;
 
     if (arrayLen > 0)
     {
-        v = readArrayField(data, field, parentEndian, arrayLen, baseOffset);
+        value = readArrayField(data, field, parentEndian, arrayLen, baseOffset);
     }
     else
     {
-        v = readSingleField(data, field, parentEndian, baseOffset);
+        value = readSingleField(data, field, parentEndian, baseOffset);
     }
 
-    return v;
+    return value;
 }
 
 void Utils::writeField(QByteArray &buffer, const AbstractField *field, const QVariant &value, QSysInfo::Endian parentEndian, int baseOffset)
@@ -53,7 +55,11 @@ QVariant Utils::readArrayField(const QByteArray &data, const AbstractField *fiel
 
     for (int i = 0; i < length; i++)
     {
-        list.push_back(readSingleField(data, field, parentEndian, baseOffset + i * elementSize));
+        QVariant value = readSingleField(data, field, parentEndian, baseOffset + i * elementSize);
+        if (value.isNull())
+            return {};
+
+        list.push_back(value);
     }
 
     return list;
@@ -73,7 +79,11 @@ QVariant Utils::readSingleField(const QByteArray &data, const AbstractField *fie
             if (!child->arrayLengthField.isEmpty())
                 length = map[child->arrayLengthField].toInt();
 
-            map[child->name] = readField(data, child.get(), msg->endian, length, absoluteOffset);
+            QVariant value = readField(data, child.get(), msg->endian, length, absoluteOffset);
+            if (value.isNull())
+                return {};
+
+            map[child->name] = value;
         }
         return map;
     }
@@ -91,44 +101,63 @@ QVariant Utils::readSingleField(const QByteArray &data, const AbstractField *fie
         return QVariant::fromValue(v);
     }
 
+    QVariant value;
     QSysInfo::Endian endian = fieldDef->hasEndianOverride ? fieldDef->endian : parentEndian;
     switch (fieldDef->type)
     {
     case FieldType::UINT:
     {
         if (fieldDef->size == 1)
-            return readValue<uint8_t>(data, absoluteOffset, endian);
+            value = readValue<uint8_t>(data, absoluteOffset, endian);
         if (fieldDef->size == 2)
-            return readValue<uint16_t>(data, absoluteOffset, endian);
+            value = readValue<uint16_t>(data, absoluteOffset, endian);
         if (fieldDef->size == 4)
-            return readValue<uint32_t>(data, absoluteOffset, endian);
+            value = readValue<uint32_t>(data, absoluteOffset, endian);
         if (fieldDef->size == 8)
-            return readValue<uint64_t>(data, absoluteOffset, endian);
+            value = readValue<uint64_t>(data, absoluteOffset, endian);
     }
     break;
 
     case FieldType::INT:
     {
         if (fieldDef->size == 1)
-            return readValue<int8_t>(data, absoluteOffset, endian);
+            value = readValue<int8_t>(data, absoluteOffset, endian);
         if (fieldDef->size == 2)
-            return readValue<int16_t>(data, absoluteOffset, endian);
+            value = readValue<int16_t>(data, absoluteOffset, endian);
         if (fieldDef->size == 4)
-            return readValue<int32_t>(data, absoluteOffset, endian);
+            value = readValue<int32_t>(data, absoluteOffset, endian);
         if (fieldDef->size == 8)
-            return readValue<int64_t>(data, absoluteOffset, endian);
+            value = readValue<int64_t>(data, absoluteOffset, endian);
     }
     break;
 
     case FieldType::FLOAT:
-        return readValue<float>(data, absoluteOffset, endian);
+        value = readValue<float>(data, absoluteOffset, endian);
     case FieldType::DOUBLE:
-        return readValue<double>(data, absoluteOffset, endian);
+        value = readValue<double>(data, absoluteOffset, endian);
     case FieldType::BOOL:
-        return bool(readValue<uint8_t>(data, absoluteOffset, endian));
+        value = bool(readValue<uint8_t>(data, absoluteOffset, endian));
     }
 
-    return {};
+    if (fieldDef->compute.hasCompute())
+    {
+        const IChecksumAlgorithm* algo = ChecksumFactory::create(fieldDef->compute.algorithm);
+        if (algo)
+        {
+            if (!algo->verify(data, baseOffset, *fieldDef, value))
+            {
+                // TODO: calculating two times of computed value
+                auto expected = algo->compute(data, baseOffset, *fieldDef);
+                qWarning() << "MessageParser: compute mismatch for" << fieldDef->name
+                           << "- expected:" << expected << "received:" << value;
+
+                if (fieldDef->compute.onMismatch == "drop")
+                    return {};
+            }
+        }
+    }
+
+    return value;
 }
 
 void Utils::writeArrayField(QByteArray &buffer, const AbstractField *field, const QVariant &value, QSysInfo::Endian parentEndian, int baseOffset)

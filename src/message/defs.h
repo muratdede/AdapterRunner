@@ -18,9 +18,6 @@ struct ComputeDef
 {
     QString algorithm;    // e.g. "checksum_2c"
     QString onMismatch;   // e.g. "drop", "warn" (receive-side only)
-    QString scope;        // "payload" (default), "header", "frame"
-    int rangeStart = 0;   // byte offset within scope
-    int rangeEnd = -1;    // -1 = end of scope
 
     bool hasCompute() const { return !algorithm.isEmpty(); }
 };
@@ -28,14 +25,16 @@ struct ComputeDef
 struct AbstractField
 {
     QString name;
+    QString typeName;
+    FieldType type;
+
+    bool hasEndianOverride = false;
+    QSysInfo::Endian endian;
 
     int byteOffset = 0;
 
     int arrayLength = 0;
     QString arrayLengthField;
-
-    bool hasEndianOverride = false;
-    QSysInfo::Endian endian;
 
     virtual ~AbstractField() = default;
 
@@ -43,10 +42,15 @@ struct AbstractField
     virtual int getSize() const = 0;
 };
 
+struct AbstractMessage: AbstractField
+{
+    QVector<std::shared_ptr<AbstractField>> fields;
+
+    bool isMessage() const override { return true; }
+};
+
 struct FieldDef : public AbstractField
 {
-    FieldType type;
-
     int bitOffset = -1;
     int bitLength = 0;
 
@@ -61,17 +65,18 @@ struct FieldDef : public AbstractField
     int getSize() const override { return size; }
 };
 
-struct MessageDef : public AbstractField
+struct HeaderDef: AbstractMessage
 {
-    QString headerType;
+    int headerSize = 0;
 
-    int messageId = -1;
-    QString templateName;
+    int getSize() const override { return headerSize; }
+};
 
-    QVector<std::shared_ptr<AbstractField>> fields;
+struct MessageDef: AbstractMessage
+{
+    int id = -1;
 
-    bool isMessage() const override { return true; }
-    int getSize() const override {
+    int getSize() const override { // TODO: smells
         int max = 0;
         for (const auto& f : fields) {
             int len = f->arrayLength > 0 ? f->arrayLength : 1;
@@ -80,17 +85,6 @@ struct MessageDef : public AbstractField
         }
         return max;
     }
-};
-
-struct HeaderDef
-{
-    QString type;
-
-    QSysInfo::Endian endian;
-
-    QVector<std::shared_ptr<AbstractField>> fields;
-
-    int headerSize = 0;
 };
 
 #endif // DEFS_H
