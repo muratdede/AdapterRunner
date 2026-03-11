@@ -144,10 +144,9 @@ QVariant Utils::readSingleField(const QByteArray &data, const AbstractField *fie
         const IChecksumAlgorithm* algo = ChecksumFactory::create(fieldDef->compute.algorithm);
         if (algo)
         {
-            if (!algo->verify(data, baseOffset, *fieldDef, value))
+            auto expected = algo->compute(data, baseOffset, *fieldDef);
+            if (expected != value)
             {
-                // TODO: calculating two times of computed value
-                auto expected = algo->compute(data, baseOffset, *fieldDef);
                 qWarning() << "MessageParser: compute mismatch for" << fieldDef->name
                            << "- expected:" << expected << "received:" << value;
 

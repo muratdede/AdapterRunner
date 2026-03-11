@@ -28,6 +28,7 @@ private slots:
 
 private:
     QMap<QString, QVariant> buildMergedValues();
+    void applyMappings(const QVector<FieldMapping>& mappings, const QMap<QString, QVariant>& baseValues, QMap<QString, QVariant>& targetMap);
     bool hasAnyAliveSource() const;
 
     QString mResponseMessage;

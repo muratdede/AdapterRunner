@@ -76,14 +76,16 @@ struct MessageDef: AbstractMessage
 {
     int id = -1;
 
-    int getSize() const override { // TODO: smells
-        int max = 0;
-        for (const auto& f : fields) {
-            int len = f->arrayLength > 0 ? f->arrayLength : 1;
-            int s = f->byteOffset + len * f->getSize();
-            if (s > max) max = s;
+    int getSize() const override {
+        int maxByteOffset = 0;
+        for (const auto& field : fields) {
+            int elementCount = field->arrayLength > 0 ? field->arrayLength : 1;
+            int fieldEndOffset = field->byteOffset + (elementCount * field->getSize());
+            if (fieldEndOffset > maxByteOffset) {
+                maxByteOffset = fieldEndOffset;
+            }
         }
-        return max;
+        return maxByteOffset;
     }
 };
 

@@ -68,7 +68,6 @@ void PeriodicSenderBehaviour::onTimerTick()
         mSender->send(frame);
 }
 
-// TODO smells
 QMap<QString, QVariant> PeriodicSenderBehaviour::buildMergedValues()
 {
     QMap<QString, QVariant> merged;
@@ -81,73 +80,46 @@ QMap<QString, QVariant> PeriodicSenderBehaviour::buildMergedValues()
         for (auto it = values.begin(); it != values.end(); ++it)
             merged.insert(it.key(), it.value());
 
-        if (!mappings.isEmpty())
-        {
-            // Apply expression-based mappings
-            mEvaluator.setVariables(values);
-
-            for (const FieldMapping& mapping : mappings)
-            {
-                // Load dependent source variables into JS scope
-                for (const QString& dep : mapping.dependents)
-                {
-                    int dotIdx = dep.indexOf('.');
-                    QString msgName = (dotIdx > 0) ? dep.left(dotIdx) : dep;
-                    QString fieldName = (dotIdx > 0) ? dep.mid(dotIdx + 1) : QString();
-
-                    SourceTracker* depTracker = mTrackerByName.value(msgName, nullptr);
-                    if (!depTracker) continue;
-
-                    if (fieldName.isEmpty())
-                        mEvaluator.setVariables(depTracker->currentValues());
-                    else
-                    {
-                        const auto& vals = depTracker->currentValues();
-                        if (vals.contains(fieldName))
-                            mEvaluator.setVariable(fieldName, vals[fieldName]);
-                    }
-                }
-
-                QVariant result = mEvaluator.evaluate(mapping.expression);
-                merged.insert(mapping.targetField, result);
-            }
-        }
+        applyMappings(mappings, values, merged);
     }
 
-    // TODO Duplicate code
-    if (!mMappings.isEmpty())
-    {
-        // Apply expression-based mappings
-        mEvaluator.setVariables(merged);
-
-        for (const FieldMapping& mapping : mMappings)
-        {
-            // Load dependent source variables into JS scope
-            for (const QString& dep : mapping.dependents)
-            {
-                int dotIdx = dep.indexOf('.');
-                QString msgName = (dotIdx > 0) ? dep.left(dotIdx) : dep;
-                QString fieldName = (dotIdx > 0) ? dep.mid(dotIdx + 1) : QString();
-
-                SourceTracker* depTracker = mTrackerByName.value(msgName, nullptr);
-                if (!depTracker) continue;
-
-                if (fieldName.isEmpty())
-                    mEvaluator.setVariables(depTracker->currentValues());
-                else
-                {
-                    const auto& vals = depTracker->currentValues();
-                    if (vals.contains(fieldName))
-                        mEvaluator.setVariable(fieldName, vals[fieldName]);
-                }
-            }
-
-            QVariant result = mEvaluator.evaluate(mapping.expression);
-            merged.insert(mapping.targetField, result);
-        }
-    }
+    applyMappings(mMappings, merged, merged);
 
     return merged;
+}
+
+void PeriodicSenderBehaviour::applyMappings(const QVector<FieldMapping>& mappings, const QMap<QString, QVariant>& baseValues, QMap<QString, QVariant>& targetMap)
+{
+    if (mappings.isEmpty())
+        return;
+
+    mEvaluator.setVariables(baseValues);
+
+    for (const FieldMapping& mapping : mappings)
+    {
+        // Load dependent source variables into JS scope
+        for (const QString& dep : mapping.dependents)
+        {
+            int dotIdx = dep.indexOf('.');
+            QString msgName = (dotIdx > 0) ? dep.left(dotIdx) : dep;
+            QString fieldName = (dotIdx > 0) ? dep.mid(dotIdx + 1) : QString();
+
+            SourceTracker* depTracker = mTrackerByName.value(msgName, nullptr);
+            if (!depTracker) continue;
+
+            if (fieldName.isEmpty())
+                mEvaluator.setVariables(depTracker->currentValues());
+            else
+            {
+                const auto& vals = depTracker->currentValues();
+                if (vals.contains(fieldName))
+                    mEvaluator.setVariable(fieldName, vals[fieldName]);
+            }
+        }
+
+        QVariant result = mEvaluator.evaluate(mapping.expression);
+        targetMap.insert(mapping.targetField, result);
+    }
 }
 
 bool PeriodicSenderBehaviour::hasAnyAliveSource() const
