@@ -10,12 +10,17 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
-ReactionEngine::ReactionEngine(TransportManager *tm, MessageParser *parser,
-                               MessageSerializer *serializer, QObject *parent)
-    : QObject(parent), mTransportManager(tm), mParser(parser),
-    mSerializer(serializer) {}
+ReactionEngine::ReactionEngine(TransportManager *tm, MessageParser *parser, MessageSerializer *serializer, QObject *parent)
+    : QObject(parent)
+    , mTransportManager(tm)
+    , mParser(parser)
+    , mSerializer(serializer)
+{
 
-void ReactionEngine::loadFromFile(const QString &messagesJsonPath) {
+}
+
+void ReactionEngine::loadFromFile(const QString &messagesJsonPath)
+{
     QFile file(messagesJsonPath);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "ReactionEngine: cannot open" << messagesJsonPath;
@@ -38,7 +43,8 @@ void ReactionEngine::loadFromFile(const QString &messagesJsonPath) {
     }
 }
 
-IBehaviour *ReactionEngine::createBehaviour(const QJsonObject &config) {
+IBehaviour *ReactionEngine::createBehaviour(const QJsonObject &config)
+{
     QString type = config["type"].toString();
 
     // Resolve sender
@@ -63,7 +69,8 @@ IBehaviour *ReactionEngine::createBehaviour(const QJsonObject &config) {
     return nullptr;
 }
 
-void ReactionEngine::connectReceiver(const QString &receiverName) {
+void ReactionEngine::connectReceiver(const QString &receiverName)
+{
     if (receiverName.isEmpty() || mConnectedReceivers.contains(receiverName))
         return;
 
@@ -73,16 +80,13 @@ void ReactionEngine::connectReceiver(const QString &receiverName) {
         return;
     }
 
-    connect(receiver, &ITransport::newMessageFromRemote, this,
-            [this, receiverName](const QByteArray &data) {
-                onReceiverData(data, receiverName);
-            });
+    connect(receiver, &ITransport::newMessageFromRemote, this, std::bind(&ReactionEngine::onReceiverData, this, std::placeholders::_1, receiverName));
 
     mConnectedReceivers.insert(receiverName);
 }
 
-void ReactionEngine::onReceiverData(const QByteArray &data,
-                                    const QString &receiverName) {
+void ReactionEngine::onReceiverData(const QByteArray &data, const QString &receiverName)
+{
     ParsedMessage message = mParser->parseFrame(data);
 
     if (message.name.isEmpty())

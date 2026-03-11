@@ -132,6 +132,7 @@ bool PeriodicSenderBehaviour::hasAnyAliveSource() const
     return false;
 }
 
+// TODO: her çağrıldığında local list tekrar oluşturuluyor, statik mi olsa iyi olurdu?
 QStringList PeriodicSenderBehaviour::requiredReceivers() const
 {
     QStringList list;

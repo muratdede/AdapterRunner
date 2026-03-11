@@ -22,14 +22,14 @@ int main(int argc, char *argv[])
 
     // Load protocol schema
     ProtocolSchema schema;
-    schema.load("../exampleConfigs/akkor_messages_2.json");
+    schema.load("../exampleConfigs/akkor_messages.json");
 
     MessageParser parser(&schema);
     MessageSerializer serializer(&schema);
 
     // Load and start reaction engine
     ReactionEngine engine(&tm, &parser, &serializer);
-    engine.loadFromFile("../exampleConfigs/akkor_messages_2.json");
+    engine.loadFromFile("../exampleConfigs/akkor_messages.json");
 
     // Debug: log all received messages on all receivers
     auto& receivers = tm.receivers();
