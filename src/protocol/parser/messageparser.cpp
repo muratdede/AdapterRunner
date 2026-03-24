@@ -1,8 +1,8 @@
-#include "src/protocol/parser/messageparser.h"
-
-#include "src/core/utils.h"
+#include "messageparser.h"
 
 #include <QDebug>
+
+#include "src/core/utils.h"
 
 ParsedMessage MessageParser::parseFrame(const QByteArray& frame)
 {
@@ -20,13 +20,15 @@ ParsedMessage MessageParser::parseFrame(const QByteArray& frame)
     ParsedMessage result;
     result.name = msgDef->name;
 
+    int payloadOffset = header->headerSize; // Start immediately after header
+
     for (const auto& fieldPtr : std::as_const(msgDef->fields))
     {
         int length = fieldPtr->arrayLength;
         if (!fieldPtr->arrayLengthField.isEmpty())
             length = result.values[fieldPtr->arrayLengthField].toInt();
 
-        QVariant value = Utils::readField(frame, fieldPtr.get(), msgDef->endian, length, 0);
+        QVariant value = Utils::readField(frame, fieldPtr.get(), msgDef->endian, length, 0, &payloadOffset);
         if (value.isNull())
             return {};
 
@@ -41,13 +43,15 @@ ParsedHeader MessageParser::parseHeader(const QByteArray &frame, const HeaderDef
 
     result.type = header.name;
 
+    int headerOffset = 0;
+
     for (const auto& fieldPtr : header.fields)
     {
         int length = fieldPtr->arrayLength;
         if (!fieldPtr->arrayLengthField.isEmpty())
             length = result.values[fieldPtr->arrayLengthField].toInt();
 
-        QVariant value = Utils::readField(frame, fieldPtr.get(), header.endian, length, 0);
+        QVariant value = Utils::readField(frame, fieldPtr.get(), header.endian, length, 0, &headerOffset);
         if (value.isNull())
             return {};
 

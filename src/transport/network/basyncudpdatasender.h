@@ -1,8 +1,9 @@
 #ifndef BASYNCUDPDATASENDER_H
 #define BASYNCUDPDATASENDER_H
 
-#include "src/transport/interfaces/isender.h"
 #include <QUdpSocket>
+
+#include "src/transport/interfaces/isender.h"
 
 class BAsyncUDPDataSender : public ISender
 {

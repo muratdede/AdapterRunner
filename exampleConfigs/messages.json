@@ -10,7 +10,9 @@
           "type": "uint16",
           "byte_offset": 0,
           "identifier": true,
-          "match_values": ["AA55"]
+          "match_values": [
+            "AA55"
+          ]
         },
         {
           "name": "msg_id",
@@ -34,7 +36,9 @@
           "type": "uint16",
           "byte_offset": 0,
           "identifier": true,
-          "match_values": ["55AA"]
+          "match_values": [
+            "55AA"
+          ]
         },
         {
           "name": "msg_id",
@@ -64,18 +68,15 @@
         {
           "name": "timestamp",
           "type": "uint32",
-          "byte_offset": 0,
           "endianness": "big"
         },
         {
           "name": "status",
-          "type": "uint8",
-          "byte_offset": 4
+          "type": "uint8"
         },
         {
           "name": "checksum",
           "type": "uint8",
-          "byte_offset": 5,
           "compute": {
             "algorithm": "checksum_2c",
             "onMismatch": "drop"
@@ -92,7 +93,6 @@
         {
           "name": "position",
           "type": "float",
-          "byte_offset": 0,
           "array_length": 3
         }
       ]
@@ -105,15 +105,17 @@
       "fields": [
         {
           "name": "count",
-          "type": "uint8",
-          "byte_offset": 0
+          "type": "uint8"
         },
         {
           "name": "values",
           "type": "uint16",
-          "byte_offset": 1,
           "endianness": "big",
           "array_length_field": "count"
+        },
+        {
+          "name": "dynamic_tail",
+          "type": "uint32"
         }
       ]
     },
@@ -126,24 +128,20 @@
         {
           "name": "timestamp",
           "type": "uint32",
-          "byte_offset": 0,
           "endianness": "big"
         },
         {
           "name": "status",
-          "type": "uint8",
-          "byte_offset": 4
+          "type": "uint8"
         },
         {
           "name": "position",
           "type": "uint16",
-          "byte_offset": 5,
           "array_length": 3
         },
         {
           "name": "checksum",
           "type": "uint8",
-          "byte_offset": 11,
           "compute": {
             "algorithm": "checksum_2c",
             "onMismatch": "drop"

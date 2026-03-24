@@ -1,8 +1,9 @@
-#include "src/behavior/impls/periodicsenderbehaviour.h"
-#include "src/core/jsonutils.h"
+#include "periodicsenderbehaviour.h"
 
 #include <QJsonArray>
 #include <QDebug>
+
+#include "src/core/jsonutils.h"
 
 PeriodicSenderBehaviour::PeriodicSenderBehaviour(const QJsonObject &config, ISender *sender, MessageSerializer *serializer, QObject *parent)
     : IBehaviour(parent)

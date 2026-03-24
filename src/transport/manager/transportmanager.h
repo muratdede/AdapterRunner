@@ -1,10 +1,10 @@
 #ifndef TRANSPORTMANAGER_H
 #define TRANSPORTMANAGER_H
 
+#include <QHash>
+
 #include "src/transport/interfaces/itransport.h"
 #include "src/transport/interfaces/isender.h"
-
-#include <QHash>
 
 class TransportManager
 {

@@ -1,7 +1,8 @@
-#include "src/behavior/impls/respondbehaviour.h"
-#include "src/core/jsonutils.h"
+#include "respondbehaviour.h"
 
 #include <QDebug>
+
+#include "src/core/jsonutils.h"
 
 RespondBehaviour::RespondBehaviour(const QJsonObject &config, ISender *sender, MessageSerializer *serializer, QObject *parent)
     : IBehaviour(parent)

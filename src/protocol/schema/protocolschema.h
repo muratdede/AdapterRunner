@@ -1,11 +1,11 @@
 #ifndef PROTOCOLSCHEMA_H
 #define PROTOCOLSCHEMA_H
 
-#include "src/protocol/types/defs.h"
-
 #include <QHash>
 #include <QJsonObject>
 #include <memory>
+
+#include "src/protocol/types/defs.h"
 
 class ProtocolSchema
 {

@@ -1,9 +1,9 @@
 #ifndef BSERIALSENDERRECEIVER_H
 #define BSERIALSENDERRECEIVER_H
 
-#include "src/transport/network/bathreadnetworkreceiver.h"
-
 #include <QSerialPort>
+
+#include "src/transport/network/bathreadnetworkreceiver.h"
 
 class BSerialSenderReceiver : public BAThreadNetworkReceiver
 {

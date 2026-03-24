@@ -1,4 +1,4 @@
-#include "src/transport/serial/bserialsenderreceiver.h"
+#include "bserialsenderreceiver.h"
 
 #include <QCoreApplication>
 #include <QAbstractEventDispatcher>

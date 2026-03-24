@@ -1,9 +1,9 @@
 #ifndef BASYNCUDPDATARECEIVER_H
 #define BASYNCUDPDATARECEIVER_H
 
-#include "src/transport/network/bathreadnetworkreceiver.h"
-
 #include <QUdpSocket>
+
+#include "src/transport/network/bathreadnetworkreceiver.h"
 
 class BAsyncUDPDataReceiver : public BAThreadNetworkReceiver
 {

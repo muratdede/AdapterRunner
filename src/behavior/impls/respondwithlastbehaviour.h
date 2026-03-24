@@ -1,14 +1,13 @@
 #ifndef RESPONDWITHLASTBEHAVIOUR_H
 #define RESPONDWITHLASTBEHAVIOUR_H
 
-#include "src/behavior/interfaces/ibehaviour.h"
-#include "src/engine/tracker/sourcetracker.h"
-
 #include <QTimer>
 #include <QJsonObject>
 
 #include "src/transport/interfaces/isender.h"
 #include "src/protocol/serializer/messageserializer.h"
+#include "src/behavior/interfaces/ibehaviour.h"
+#include "src/engine/tracker/sourcetracker.h"
 
 class RespondWithLastBehaviour : public IBehaviour
 {

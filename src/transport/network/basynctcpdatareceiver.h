@@ -1,10 +1,10 @@
 #ifndef BASYNCTCPDATARECEIVER_H
 #define BASYNCTCPDATARECEIVER_H
 
-#include "src/transport/network/bathreadnetworkreceiver.h"
-
 #include <QTcpServer>
 #include <QTcpSocket>
+
+#include "src/transport/network/bathreadnetworkreceiver.h"
 
 class BAsyncTCPDataReceiver : public BAThreadNetworkReceiver
 {

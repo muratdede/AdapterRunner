@@ -1,17 +1,16 @@
 #ifndef PERIODICSENDERBEHAVIOUR_H
 #define PERIODICSENDERBEHAVIOUR_H
 
-#include "src/behavior/interfaces/ibehaviour.h"
-#include "src/engine/tracker/sourcetracker.h"
-#include "src/protocol/schema/fieldmapping.h"
-#include "src/engine/evaluator/expressioneval.h"
-
 #include <QTimer>
 #include <QVector>
 #include <QJsonObject>
 
 #include "src/transport/interfaces/isender.h"
 #include "src/protocol/serializer/messageserializer.h"
+#include "src/behavior/interfaces/ibehaviour.h"
+#include "src/engine/tracker/sourcetracker.h"
+#include "src/protocol/schema/fieldmapping.h"
+#include "src/engine/evaluator/expressioneval.h"
 
 class PeriodicSenderBehaviour : public IBehaviour
 {

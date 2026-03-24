@@ -1,9 +1,10 @@
 #ifndef BASYNCTCPDATASENDER_H
 #define BASYNCTCPDATASENDER_H
 
-#include "src/core/bathread.h"
 #include <QTcpSocket>
 #include <QHostAddress>
+
+#include "src/core/bathread.h"
 
 class BAsyncTCPDataSender : public BAThread
 {

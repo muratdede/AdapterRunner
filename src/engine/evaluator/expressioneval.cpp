@@ -1,4 +1,4 @@
-#include "src/engine/evaluator/expressioneval.h"
+#include "expressioneval.h"
 
 #include <QJSValue>
 #include <QDebug>

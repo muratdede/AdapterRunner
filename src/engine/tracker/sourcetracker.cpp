@@ -1,4 +1,4 @@
-#include "src/engine/tracker/sourcetracker.h"
+#include "sourcetracker.h"
 
 #include <QDebug>
 

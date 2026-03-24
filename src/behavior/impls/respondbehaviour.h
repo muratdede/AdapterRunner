@@ -1,13 +1,12 @@
 #ifndef RESPONDBEHAVIOUR_H
 #define RESPONDBEHAVIOUR_H
 
-#include "src/behavior/interfaces/ibehaviour.h"
-
 #include <QTimer>
 #include <QJsonObject>
 
 #include "src/transport/interfaces/isender.h"
 #include "src/protocol/serializer/messageserializer.h"
+#include "src/behavior/interfaces/ibehaviour.h"
 
 class RespondBehaviour : public IBehaviour
 {

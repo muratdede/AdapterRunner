@@ -31,7 +31,7 @@ struct AbstractField
     bool hasEndianOverride = false;
     QSysInfo::Endian endian;
 
-    int byteOffset = 0;
+    int byteOffset = -1;
 
     int arrayLength = 0;
     QString arrayLengthField;

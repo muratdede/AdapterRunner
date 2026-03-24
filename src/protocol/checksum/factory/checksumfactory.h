@@ -1,10 +1,10 @@
 #ifndef CHECKSUMFACTORY_H
 #define CHECKSUMFACTORY_H
 
+#include <QString>
+
 #include "src/protocol/checksum/interfaces/ichecksumalgorithm.h"
 #include "src/protocol/checksum/impls/checksum2c.h"
-
-#include <QString>
 
 class ChecksumFactory
 {

@@ -1,7 +1,8 @@
-#include "src/behavior/impls/respondwithlastbehaviour.h"
-#include "src/core/jsonutils.h"
+#include "respondwithlastbehaviour.h"
 
 #include <QDebug>
+
+#include "src/core/jsonutils.h"
 
 RespondWithLastBehaviour::RespondWithLastBehaviour(const QJsonObject &config, ISender *sender, MessageSerializer *serializer, QObject *parent)
     : IBehaviour(parent)

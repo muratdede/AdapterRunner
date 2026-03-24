@@ -1,4 +1,4 @@
-#include "src/transport/network/basynctcpdatareceiver.h"
+#include "basynctcpdatareceiver.h"
 
 #include <QDebug>
 #include <QAbstractEventDispatcher>

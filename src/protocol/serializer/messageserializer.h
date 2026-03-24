@@ -1,10 +1,10 @@
 #ifndef MESSAGESERIALIZER_H
 #define MESSAGESERIALIZER_H
 
-#include "src/protocol/schema/protocolschema.h"
-
 #include <QMap>
 #include <QVariant>
+
+#include "src/protocol/schema/protocolschema.h"
 
 class MessageSerializer
 {

@@ -1,14 +1,14 @@
-#include "src/engine/core/reactionengine.h"
-
-#include "src/behavior/impls/periodicsenderbehaviour.h"
-#include "src/behavior/impls/respondbehaviour.h"
-#include "src/behavior/impls/respondwithlastbehaviour.h"
+#include "reactionengine.h"
 
 #include <QDebug>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+
+#include "src/behavior/impls/periodicsenderbehaviour.h"
+#include "src/behavior/impls/respondbehaviour.h"
+#include "src/behavior/impls/respondwithlastbehaviour.h"
 
 ReactionEngine::ReactionEngine(TransportManager *tm, MessageParser *parser, MessageSerializer *serializer, QObject *parent)
     : QObject(parent)

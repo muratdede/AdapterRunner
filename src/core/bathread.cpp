@@ -1,4 +1,4 @@
-#include "src/core/bathread.h"
+#include "bathread.h"
 
 #include <QDebug>
 #include <QAbstractEventDispatcher>

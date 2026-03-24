@@ -1,11 +1,12 @@
-#include "src/protocol/schema/protocolschema.h"
+#include "protocolschema.h"
 
-#include "src/core/utils.h"
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <stdexcept>
+
+#include "src/core/utils.h"
 
 bool ProtocolSchema::load(const QString &path)
 {
@@ -221,9 +222,9 @@ int ProtocolSchema::parseTypeSize(const QString &type)
     return 0;
 }
 
-std::shared_ptr<AbstractField> ProtocolSchema::parseField(const QJsonObject& f, QSysInfo::Endian defaultEndian)
+std::shared_ptr<AbstractField> ProtocolSchema::parseField(const QJsonObject& fieldJson, QSysInfo::Endian defaultEndian)
 {
-    QString typeName = f["type"].toString();
+    QString typeName = fieldJson["type"].toString();
 
     // Check if primitive
     FieldType pType;
@@ -237,52 +238,52 @@ std::shared_ptr<AbstractField> ProtocolSchema::parseField(const QJsonObject& f, 
     if (!isPrimitive)
     {
         auto child = std::make_shared<MessageDef>();
-        child->name = f["name"].toString();
+        child->name = fieldJson["name"].toString();
         child->typeName = typeName;
-        child->byteOffset = f["byte_offset"].toInt();
-        child->arrayLength = f["array_length"].toInt(child->arrayLength);
-        child->arrayLengthField = f["array_length_field"].toString(child->arrayLengthField);
+        child->byteOffset = fieldJson["byte_offset"].toInt(-1);
+        child->arrayLength = fieldJson["array_length"].toInt(child->arrayLength);
+        child->arrayLengthField = fieldJson["array_length_field"].toString(child->arrayLengthField);
 
         child->endian = defaultEndian;
-        if (f.contains("endianness"))
+        if (fieldJson.contains("endianness"))
         {
-            child->endian = parseEndianness(f["endianness"].toString());
+            child->endian = parseEndianness(fieldJson["endianness"].toString());
         }
 
         return child;
     }
 
     auto field = std::make_shared<FieldDef>();
-    field->name = f["name"].toString();
+    field->name = fieldJson["name"].toString();
     field->type = pType;
     field->size = parseTypeSize(typeName);
-    field->byteOffset = f["byte_offset"].toInt();
-    field->bitOffset = f["bit_offset"].toInt(field->bitOffset);
-    field->bitLength = f["bit_length"].toInt(field->bitLength);
-    field->arrayLength = f["array_length"].toInt(field->arrayLength);
-    field->arrayLengthField = f["array_length_field"].toString();
+    field->byteOffset = fieldJson["byte_offset"].toInt(-1);
+    field->bitOffset = fieldJson["bit_offset"].toInt(field->bitOffset);
+    field->bitLength = fieldJson["bit_length"].toInt(field->bitLength);
+    field->arrayLength = fieldJson["array_length"].toInt(field->arrayLength);
+    field->arrayLengthField = fieldJson["array_length_field"].toString();
 
     field->endian = defaultEndian;
-    if (f.contains("endianness"))
+    if (fieldJson.contains("endianness"))
     {
-        field->endian = parseEndianness(f["endianness"].toString());
+        field->endian = parseEndianness(fieldJson["endianness"].toString());
     }
 
-    if (f.contains("compute"))
+    if (fieldJson.contains("compute"))
     {
-        auto cObj = f["compute"].toObject();
+        auto cObj = fieldJson["compute"].toObject();
         field->compute.algorithm = cObj["algorithm"].toString();
         field->compute.onMismatch = cObj["onMismatch"].toString();
     }
 
-    if (f.contains("identifier") && f["identifier"].toBool())
+    if (fieldJson.contains("identifier") && fieldJson["identifier"].toBool())
     {
         field->isIdentifier = true;
     }
 
-    if (f.contains("match_values"))
+    if (fieldJson.contains("match_values"))
     {
-        auto arr = f["match_values"].toArray();
+        auto arr = fieldJson["match_values"].toArray();
         for (const auto& val : qAsConst(arr))
         {
             if (val.isString())

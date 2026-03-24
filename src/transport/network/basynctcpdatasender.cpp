@@ -1,4 +1,4 @@
-#include "src/transport/network/basynctcpdatasender.h"
+#include "basynctcpdatasender.h"
 
 #include <QDebug>
 #include <QCoreApplication>

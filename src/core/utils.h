@@ -9,8 +9,8 @@
 
 class Utils {
 public:
-    static QVariant readField(const QByteArray& data, const AbstractField* field, QSysInfo::Endian parentEndian, int arrayLen = 0, int baseOffset = 0);
-    static void writeField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian endian, int baseOffset = 0);
+    static QVariant readField(const QByteArray& data, const AbstractField* field, QSysInfo::Endian parentEndian, int arrayLen = 0, int baseOffset = 0, int* currentOffset = nullptr);
+    static void writeField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian endian, int baseOffset = 0, int* currentOffset = nullptr);
 
     template<typename T>
     static QVariant toQVariant(const FieldDef& field, T value)
@@ -53,8 +53,8 @@ public:
     }
 
 private:
-    static QVariant readArrayField(const QByteArray &data, const AbstractField* field, QSysInfo::Endian parentEndian, int length, int baseOffset);
-    static QVariant readSingleField(const QByteArray &data, const AbstractField* field, QSysInfo::Endian parentEndian, int baseOffset);
+    static QVariant readArrayField(const QByteArray &data, const AbstractField* field, QSysInfo::Endian parentEndian, int length, int baseOffset, int* currentOffset);
+    static QVariant readSingleField(const QByteArray &data, const AbstractField* field, QSysInfo::Endian parentEndian, int baseOffset, int* currentOffset);
 
     static uint64_t extractBits(const QByteArray &data, int byteOffset, int bitOffset, int bitLength);
 
@@ -107,8 +107,8 @@ private:
 
     //----------------------------------------------------------//
 
-    static void writeArrayField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian parentEndian, int baseOffset);
-    static void writeSingleField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian parentEndian, int baseOffset);
+    static void writeArrayField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian parentEndian, int baseOffset, int* currentOffset);
+    static void writeSingleField(QByteArray& buffer, const AbstractField* field, const QVariant& value, QSysInfo::Endian parentEndian, int baseOffset, int* currentOffset);
 
     template<typename T>
     static void writeValue(QByteArray &buffer, int offset, T value, QSysInfo::Endian endian)
