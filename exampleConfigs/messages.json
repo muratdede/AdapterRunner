@@ -114,8 +114,12 @@
           "array_length_field": "count"
         },
         {
-          "name": "dynamic_tail",
-          "type": "uint32"
+          "name": "checksum",
+          "type": "uint8",
+          "compute": {
+            "algorithm": "checksum_2c",
+            "onMismatch": "drop"
+          }
         }
       ]
     },
