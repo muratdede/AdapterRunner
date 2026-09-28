@@ -17,23 +17,24 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     main.cpp \
-    src/conn/network/basynctcpdatareceiver.cpp \
-    src/conn/network/basynctcpdatasender.cpp \
-    src/conn/network/basyncudpdatareceiver.cpp \
-    src/conn/network/basyncudpdatasender.cpp \
-    src/conn/serial/bserialsenderreceiver.cpp \
-    src/conn/transport/transportfactory.cpp \
-    src/conn/transport/transportmanager.cpp \
-    src/message/messageparser.cpp \
-    src/message/messageserializer.cpp \
-    src/message/protocolschema.cpp \
-    src/reaction/expressioneval.cpp \
-    src/reaction/reactionengine.cpp \
-    src/reaction/respondbehaviour.cpp \
-    src/reaction/respondwithlastbehaviour.cpp \
-    src/reaction/periodicsenderbehaviour.cpp \
-    src/reaction/sourcetracker.cpp \
-    src/thread/bathread.cpp
+    src/core/utils.cpp \
+    src/core/bathread.cpp \
+    src/transport/network/basynctcpdatareceiver.cpp \
+    src/transport/network/basynctcpdatasender.cpp \
+    src/transport/network/basyncudpdatareceiver.cpp \
+    src/transport/network/basyncudpdatasender.cpp \
+    src/transport/serial/bserialsenderreceiver.cpp \
+    src/transport/factory/transportfactory.cpp \
+    src/transport/manager/transportmanager.cpp \
+    src/protocol/parser/messageparser.cpp \
+    src/protocol/serializer/messageserializer.cpp \
+    src/protocol/schema/protocolschema.cpp \
+    src/engine/evaluator/expressioneval.cpp \
+    src/engine/core/reactionengine.cpp \
+    src/engine/tracker/sourcetracker.cpp \
+    src/behavior/impls/respondbehaviour.cpp \
+    src/behavior/impls/respondwithlastbehaviour.cpp \
+    src/behavior/impls/periodicsenderbehaviour.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -41,30 +42,33 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-    src/common/jsonutils.h \
-    src/conn/network/basynctcpdatareceiver.h \
-    src/conn/network/basynctcpdatasender.h \
-    src/conn/network/basyncudpdatareceiver.h \
-    src/conn/network/basyncudpdatasender.h \
-    src/conn/network/bathreadnetworkreceiver.h \
-    src/conn/serial/bserialsenderreceiver.h \
-    src/conn/transport/isender.h \
-    src/conn/transport/itransport.h \
-    src/conn/transport/transportfactory.h \
-    src/conn/transport/transportmanager.h \
-    src/message/Utils.h \
-    src/message/defs.h \
-    src/message/messageparser.h \
-    src/message/messageserializer.h \
-    src/message/parsedheader.h \
-    src/message/parsedmessage.h \
-    src/message/protocolschema.h \
-    src/reaction/expressioneval.h \
-    src/reaction/fieldmapping.h \
-    src/reaction/ibehaviour.h \
-    src/reaction/reactionengine.h \
-    src/reaction/respondbehaviour.h \
-    src/reaction/respondwithlastbehaviour.h \
-    src/reaction/periodicsenderbehaviour.h \
-    src/reaction/sourcetracker.h \
-    src/thread/bathread.h
+    src/core/jsonutils.h \
+    src/core/utils.h \
+    src/core/bathread.h \
+    src/transport/network/basynctcpdatareceiver.h \
+    src/transport/network/basynctcpdatasender.h \
+    src/transport/network/basyncudpdatareceiver.h \
+    src/transport/network/basyncudpdatasender.h \
+    src/transport/network/bathreadnetworkreceiver.h \
+    src/transport/serial/bserialsenderreceiver.h \
+    src/transport/interfaces/isender.h \
+    src/transport/interfaces/itransport.h \
+    src/transport/factory/transportfactory.h \
+    src/transport/manager/transportmanager.h \
+    src/protocol/types/defs.h \
+    src/protocol/checksum/interfaces/ichecksumalgorithm.h \
+    src/protocol/checksum/impls/checksum2c.h \
+    src/protocol/checksum/factory/checksumfactory.h \
+    src/protocol/parser/messageparser.h \
+    src/protocol/serializer/messageserializer.h \
+    src/protocol/types/parsedheader.h \
+    src/protocol/types/parsedmessage.h \
+    src/protocol/schema/protocolschema.h \
+    src/protocol/schema/fieldmapping.h \
+    src/engine/evaluator/expressioneval.h \
+    src/engine/core/reactionengine.h \
+    src/engine/tracker/sourcetracker.h \
+    src/behavior/interfaces/ibehaviour.h \
+    src/behavior/impls/respondbehaviour.h \
+    src/behavior/impls/respondwithlastbehaviour.h \
+    src/behavior/impls/periodicsenderbehaviour.h

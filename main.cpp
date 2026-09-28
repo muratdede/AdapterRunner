@@ -2,34 +2,32 @@
 
 #include <QDebug>
 
-#include "src/conn/transport/transportmanager.h"
-
-#include "src/message/messageparser.h"
-#include "src/message/messageserializer.h"
-#include "src/message/protocolschema.h"
-
-// TODO: reactionları runtimeda sürekli if name equals ile kıyaslamak yerine gerekli sender ve reaction handlerların
-//   connectionlarıyla bu iş çözülebilir
-#include "src/reaction/reactionengine.h"
+#include "src/transport/manager/transportmanager.h"
+#include "src/protocol/parser/messageparser.h"
+#include "src/protocol/serializer/messageserializer.h"
+#include "src/protocol/schema/protocolschema.h"
+#include "src/engine/core/reactionengine.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
+    // TODO: refactor needed here, maybe a controller
+
     // Load transports (receivers + senders)
     TransportManager tm;
-    tm.load("../exampleConfigs/transports.json");
+    tm.load("../exampleConfigs/akkor_transports.json");
 
     // Load protocol schema
     ProtocolSchema schema;
-    schema.load("../exampleConfigs/messages.json");
+    schema.load("../exampleConfigs/akkor_messages.json");
 
     MessageParser parser(&schema);
     MessageSerializer serializer(&schema);
 
     // Load and start reaction engine
     ReactionEngine engine(&tm, &parser, &serializer);
-    engine.loadFromFile("../exampleConfigs/messages.json");
+    engine.loadFromFile("../exampleConfigs/akkor_messages.json");
 
     // Debug: log all received messages on all receivers
     auto& receivers = tm.receivers();
